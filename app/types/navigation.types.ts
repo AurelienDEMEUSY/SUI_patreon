@@ -20,3 +20,21 @@ export interface SidebarItemProps {
 export interface TopbarProps {
   className?: string;
 }
+
+export interface PageContainerProps {
+  children: React.ReactNode;
+  /**
+   * Maximum width constraint
+   * @default 'max-w-7xl'
+   */
+  maxWidth?: 'max-w-4xl' | 'max-w-5xl' | 'max-w-6xl' | 'max-w-7xl' | 'max-w-full';
+  /**
+   * Remove horizontal padding (useful if child has custom padding)
+   * @default false
+   */
+  noPadding?: boolean;
+  /**
+   * Additional Tailwind classes
+   */
+  className?: string;
+}

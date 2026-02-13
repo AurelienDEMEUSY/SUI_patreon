@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useCreator } from '@/hooks/useCreator';
+import { PageContainer } from '@/components/layout';
 import { CreatorHeader } from '@/components/creator/CreatorHeader';
 import { CreatorStats } from '@/components/creator/CreatorStats';
 import { ProfileTabs } from '@/components/creator/ProfileTabs';
@@ -19,19 +20,23 @@ export default function CreatorProfilePage() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="w-8 h-8 rounded-full border-2 border-[#3c3cf6] border-t-transparent animate-spin"></div>
-            </div>
+            <PageContainer>
+                <div className="flex items-center justify-center min-h-[50vh]">
+                    <div className="w-8 h-8 rounded-full border-2 border-[#3c3cf6] border-t-transparent animate-spin"></div>
+                </div>
+            </PageContainer>
         );
     }
 
     if (error || !creator) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-                <span className="material-symbols-outlined text-4xl text-gray-500 mb-2">error</span>
-                <h1 className="text-xl font-bold text-white mb-2">{error || 'Creator not found'}</h1>
-                <p className="text-gray-400">The creator you are looking for does not exist or an error occurred.</p>
-            </div>
+            <PageContainer>
+                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
+                    <span className="material-symbols-outlined text-4xl text-gray-500 mb-2">error</span>
+                    <h1 className="text-xl font-bold text-white mb-2">{error || 'Creator not found'}</h1>
+                    <p className="text-gray-400">The creator you are looking for does not exist or an error occurred.</p>
+                </div>
+            </PageContainer>
         );
     }
 
@@ -39,7 +44,7 @@ export default function CreatorProfilePage() {
     const creatorContent: any[] = []; // Placeholder for real content fetching logic
 
     return (
-        <div className="max-w-7xl mx-auto px-4 pb-20">
+        <PageContainer>
             <CreatorHeader creator={creator} />
 
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
@@ -123,6 +128,6 @@ export default function CreatorProfilePage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </PageContainer>
     );
 }

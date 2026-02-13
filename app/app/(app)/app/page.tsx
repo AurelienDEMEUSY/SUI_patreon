@@ -1,8 +1,10 @@
+import { PageContainer } from '@/components/layout';
+
 export default function AppPage() {
   return (
-    <>
-      {/* 
-      <section className="relative w-full aspect-[21/9] min-h-[300px] rounded-3xl overflow-hidden glass-panel group">
+    <PageContainer>
+      {/*
+      <section className="relative w-full aspect-[21/9] min-h-[300px] rounded-3xl overflow-hidden glass-panel group mb-8">
         <img
           alt="Ethereal digital artwork background"
           className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
@@ -28,10 +30,11 @@ export default function AppPage() {
             </button>
           </div>
         </div>
-      </section> 
+      </section>
       */}
 
-      {/* <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
+      {/*
+      <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar mb-8">
         <button className="glass-card bg-[#3c3cf6]/20 border-[#3c3cf6]/40 px-5 py-2.5 rounded-full text-sm font-semibold flex items-center gap-2 whitespace-nowrap">
           <span className="material-symbols-outlined text-lg">auto_awesome</span> All Artists
         </button>
@@ -47,13 +50,12 @@ export default function AppPage() {
         <button className="glass-card px-5 py-2.5 rounded-full text-sm font-semibold text-white/60 hover:text-white flex items-center gap-2 whitespace-nowrap">
           <span className="material-symbols-outlined text-lg">sports_esports</span> Games
         </button>
-      </div> */}
+      </div>
+      */}
 
-      <div className="flex items-center justify-center h-[50vh] text-white/30 text-sm font-bold uppercase tracking-widest">
+      <div className="flex items-center justify-center min-h-[50vh] text-white/30 text-sm font-bold uppercase tracking-widest">
         No creators found
       </div>
-
-      <div className="h-8"></div>
-    </>
+    </PageContainer>
   );
 }
