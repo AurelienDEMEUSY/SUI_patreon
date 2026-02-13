@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
 import { SidebarItem } from './SidebarItem';
 import { SIDEBAR_NAV } from '@/constants';
@@ -9,6 +9,7 @@ import type { SidebarProps } from '@/types';
 
 export function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const account = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
 
@@ -63,7 +64,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
               <p className="text-xs text-white/40 font-mono break-all">{account.address}</p>
             </div>
             <DropdownSeparator />
-            <DropdownItem>
+            <DropdownItem onClick={() => router.push(`/creator/${account.address}`)}>
               <span className="material-symbols-outlined text-lg">person</span>
               Profile
             </DropdownItem>
