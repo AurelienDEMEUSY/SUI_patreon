@@ -34,9 +34,11 @@ export default function Home() {
             <Link href="/login" className="text-sm font-medium hover:text-white transition-colors px-4">
               Sign In
             </Link>
-            <button className="bg-[#3c3cf6] hover:bg-[#3c3cf6]/90 text-white text-sm font-bold px-6 py-2.5 rounded-full transition-all active:scale-95">
-              Launch App
-            </button>
+            <Link href="/app">
+              <button className="bg-[#3c3cf6] hover:bg-[#3c3cf6]/90 text-white text-sm font-bold px-6 py-2.5 rounded-full transition-all active:scale-95">
+                Launch App
+              </button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -64,12 +66,16 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <button className="min-w-[200px] h-14 bg-[#3c3cf6] text-white font-bold rounded-xl text-lg shadow-[0_0_40px_-10px_rgba(60,60,246,0.5)] hover:shadow-[0_0_50px_-5px_rgba(60,60,246,0.6)] transition-all">
-              Launch App
-            </button>
-            <button className="min-w-[200px] h-14 bg-white/5 border border-white/10 text-white font-bold rounded-xl text-lg hover:bg-white/10 transition-all">
-              Explore Creators
-            </button>
+            <Link href="/app">
+              <button className="min-w-[200px] h-14 bg-[#3c3cf6] text-white font-bold rounded-xl text-lg shadow-[0_0_40px_-10px_rgba(60,60,246,0.5)] hover:shadow-[0_0_50px_-5px_rgba(60,60,246,0.6)] transition-all">
+                Launch App
+              </button>
+            </Link>
+            <Link href="/app">
+              <button className="min-w-[200px] h-14 bg-white/5 border border-white/10 text-white font-bold rounded-xl text-lg hover:bg-white/10 transition-all">
+                Explore Creators
+              </button>
+            </Link>
           </div>
 
           {/* Stats Visual */}
@@ -244,9 +250,11 @@ export default function Home() {
               Join the decentralized creator revolution. No middlemen, no censorship,
               just you and your community on the SUI blockchain.
             </p>
-            <button className="bg-white text-[#3c3cf6] font-black px-12 py-5 rounded-2xl text-xl hover:shadow-2xl hover:scale-105 transition-all">
-              Get Started Now
-            </button>
+            <Link href="/app">
+              <button className="bg-white text-[#3c3cf6] font-black px-12 py-5 rounded-2xl text-xl hover:shadow-2xl hover:scale-105 transition-all">
+                Get Started Now
+              </button>
+            </Link>
           </div>
           {/* Decorative shapes */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl" />

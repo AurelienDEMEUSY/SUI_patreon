@@ -76,82 +76,69 @@ body {
    Glassmorphism Utilities
    ======================================== */
 
+/* ========================================
+   Glassmorphism Utilities
+   ======================================== */
+
 .glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   border-radius: 1rem;
-  box-shadow: var(--glass-shadow);
+  /* Added based on context, user code implies rounded-2xl in HTML but CSS implies border-radius */
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.3s ease;
   border-radius: 1rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(60, 60, 246, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
 }
 
 /* ========================================
-   Background Orbs & Animations
+   Background Orbs
    ======================================== */
 
-.orb {
-  position: absolute;
+.bg-orb {
+  position: fixed;
+  width: 600px;
+  height: 600px;
   border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.25;
-  animation: float 20s infinite ease-in-out;
+  filter: blur(120px);
+  z-index: -1;
+  opacity: 0.15;
   pointer-events: none;
 }
 
 .orb-1 {
-  width: 500px;
-  height: 500px;
-  background: var(--orb-primary);
-  top: -250px;
-  left: -250px;
-  animation-delay: 0s;
+  top: -200px;
+  left: -200px;
+  background: #3c3cf6;
 }
 
 .orb-2 {
-  width: 400px;
-  height: 400px;
-  background: var(--orb-purple);
   bottom: -200px;
   right: -200px;
-  animation-delay: 7s;
+  background: #7c3aed;
 }
 
 .orb-3 {
-  width: 350px;
-  height: 350px;
-  background: var(--orb-pink);
   top: 40%;
   left: 60%;
-  animation-delay: 14s;
-  opacity: 0.15;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
+  background: #3c3cf6;
+  width: 400px;
+  height: 400px;
+  opacity: 0.1;
 }
 
 /* ========================================
