@@ -8,7 +8,6 @@ import { CreatorStats } from '@/components/creator/CreatorStats';
 import { ProfileTabs } from '@/components/creator/ProfileTabs';
 import { ContentFeed } from '@/components/content/ContentFeed';
 import { TierCard } from '@/components/tier/TierCard';
-import { MOCK_CONTENT } from '@/constants';
 
 export default function CreatorProfilePage() {
     const params = useParams();
@@ -37,7 +36,7 @@ export default function CreatorProfilePage() {
     }
 
     // Filter content for this creator
-    const creatorContent = MOCK_CONTENT.filter(c => c.creatorAddress === creator.address);
+    const creatorContent: any[] = []; // Placeholder for real content fetching logic
 
     return (
         <div className="max-w-7xl mx-auto px-4 pb-20">

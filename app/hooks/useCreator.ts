@@ -1,9 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MOCK_CREATORS } from '@/constants';
 import type { Creator } from '@/types';
-
-// TODO: Remove this once real data fetching is implemented
-const USE_MOCK = true;
 
 export function useCreator(address: string | null) {
     const [creator, setCreator] = useState<Creator | null>(null);
@@ -26,25 +22,17 @@ export function useCreator(address: string | null) {
             // const avatarUrl = await walrusClient.getBlob(creatorProfile.avatarBlobId);
             // const bannerUrl = await walrusClient.getBlob(creatorProfile.bannerBlobId);
 
-            if (USE_MOCK) {
-                // Simulate network delay
-                await new Promise(resolve => setTimeout(resolve, 300));
-                const found = MOCK_CREATORS.find((c) => c.address === address) || null;
-                setCreator(found);
-                setIsLoading(false);
-            } else {
-                // TODO: Implement real service call integration here
-                // setCreator({
-                //   address,
-                //   name: creatorProfile.name,
-                //   bio: creatorProfile.bio,
-                //   avatarBlobId: avatarUrl,
-                //   bannerBlobId: bannerUrl,
-                //   suinsName,
-                //   ...
-                // });
-                setIsLoading(false);
-            }
+            // TODO: Implement real service call integration here
+            // setCreator({
+            //   address,
+            //   name: creatorProfile.name,
+            //   bio: creatorProfile.bio,
+            //   avatarBlobId: avatarUrl,
+            //   bannerBlobId: bannerUrl,
+            //   suinsName,
+            //   ...
+            // });
+            setIsLoading(false);
         };
 
         fetchData();
