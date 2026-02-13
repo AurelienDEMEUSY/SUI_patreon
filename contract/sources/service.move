@@ -14,7 +14,7 @@ use sui::event;
 use sui::bcs;
 use std::string::String;
 use contract::types::{Self, SubscriptionTier, Post, Subscription};
-use contract::platform::{Self, Platform};
+use contract::platform::{Self, Platform, AdminCap};
 
 // ============================================================
 // Error codes
@@ -30,6 +30,8 @@ const EInvalidPrice: u64 = 9;
 const EInvalidDuration: u64 = 10;
 const EPostNotFound: u64 = 11;
 const ETierInUse: u64 = 12;
+const ESuinsNameTaken: u64 = 14;
+const ESuinsNameNotSet: u64 = 15;
 
 // ============================================================
 // Events
@@ -61,6 +63,17 @@ public struct PostDeleted has copy, drop {
     post_id: u64,
 }
 
+public struct SuinsNameLinked has copy, drop {
+    creator: address,
+    suins_name: String,
+    service_id: ID,
+}
+
+public struct SuinsNameRemoved has copy, drop {
+    creator: address,
+    suins_name: String,
+}
+
 // ============================================================
 // Structs
 // ============================================================
@@ -84,6 +97,8 @@ public struct Service has key {
     subscribers: Table<address, Subscription>,
     /// Accumulated revenue in SUI
     revenue: Balance<SUI>,
+    /// SuiNS subname (e.g., "alice.patreon.sui")
+    suins_name: Option<String>,
 }
 
 // ============================================================
@@ -111,6 +126,7 @@ entry fun create_creator_profile(
         next_post_id: 0,
         subscribers: table::new(ctx),
         revenue: balance::zero(),
+        suins_name: option::none(),
     };
 
     platform::register_creator(platform, sender, object::id(&service));
@@ -134,6 +150,82 @@ entry fun update_creator_profile(
     service.description = description;
 
     event::emit(ProfileUpdated { creator: sender, name });
+}
+
+// ============================================================
+// SuiNS name management
+// ============================================================
+
+/// Set or update the SuiNS subname for this creator's service.
+/// The actual leaf subname creation on SuiNS must be done separately via PTB.
+entry fun set_suins_name(
+    service: &mut Service,
+    platform: &mut Platform,
+    suins_name: String,
+    ctx: &TxContext,
+) {
+    let sender = ctx.sender();
+    assert!(service.creator == sender, ENotCreator);
+
+    // If already has this exact name, nothing to do
+    if (service.suins_name.is_some() && *service.suins_name.borrow() == suins_name) {
+        return
+    };
+
+    // Check name not taken by another creator
+    assert!(!platform::has_suins_name(platform, suins_name), ESuinsNameTaken);
+
+    // If already has a different name, unregister old one
+    if (service.suins_name.is_some()) {
+        let old_name = *service.suins_name.borrow();
+        platform::unregister_suins_name(platform, old_name);
+    };
+
+    platform::register_suins_name(platform, suins_name, sender);
+    service.suins_name = option::some(suins_name);
+
+    event::emit(SuinsNameLinked {
+        creator: sender,
+        suins_name,
+        service_id: object::id(service),
+    });
+}
+
+/// Remove the SuiNS subname from this creator's service.
+/// The actual leaf subname removal on SuiNS should be done separately via PTB.
+entry fun remove_suins_name(
+    service: &mut Service,
+    platform: &mut Platform,
+    ctx: &TxContext,
+) {
+    let sender = ctx.sender();
+    assert!(service.creator == sender, ENotCreator);
+    assert!(service.suins_name.is_some(), ESuinsNameNotSet);
+
+    let name = *service.suins_name.borrow();
+    platform::unregister_suins_name(platform, name);
+    service.suins_name = option::none();
+
+    event::emit(SuinsNameRemoved { creator: sender, suins_name: name });
+}
+
+/// Admin: forcibly remove a creator's SuiNS subname (e.g., to revoke an inappropriate name).
+/// The actual leaf subname removal on SuiNS should be done separately via PTB.
+entry fun admin_remove_suins_name(
+    service: &mut Service,
+    platform: &mut Platform,
+    _admin: &AdminCap,
+    _ctx: &TxContext,
+) {
+    assert!(service.suins_name.is_some(), ESuinsNameNotSet);
+
+    let name = *service.suins_name.borrow();
+    platform::unregister_suins_name(platform, name);
+
+    let creator = service.creator;
+    service.suins_name = option::none();
+
+    event::emit(SuinsNameRemoved { creator, suins_name: name });
 }
 
 // ============================================================
@@ -454,6 +546,7 @@ public fun get_creator_revenue(service: &Service): u64 {
 public fun get_creator_name(service: &Service): String { service.name }
 public fun get_creator_description(service: &Service): String { service.description }
 public fun get_service_creator(service: &Service): address { service.creator }
+public fun get_suins_name(service: &Service): Option<String> { service.suins_name }
 
 // ============================================================
 // Package-internal helpers (for subscription module)
