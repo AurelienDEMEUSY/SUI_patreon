@@ -1,5 +1,9 @@
 'use client';
 
+import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
 import { Sidebar } from '../Sidebar';
 import { Topbar } from '../Topbar';
 
@@ -8,6 +12,17 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
+  const account = useCurrentAccount();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!account) {
+      router.push('/');
+    }
+  }, [account, router]);
+
+  if (!account) return null;
+
   return (
     <>
       {/* Ambient Background Orbs */}

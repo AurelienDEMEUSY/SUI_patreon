@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LaunchAppButton } from '@/components/landing/LaunchAppButton';
 
 export default function Home() {
   return (
@@ -66,11 +67,7 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/app">
-              <button className="min-w-[200px] h-14 bg-[#3c3cf6] text-white font-bold rounded-xl text-lg shadow-[0_0_40px_-10px_rgba(60,60,246,0.5)] hover:shadow-[0_0_50px_-5px_rgba(60,60,246,0.6)] transition-all">
-                Launch App
-              </button>
-            </Link>
+            <LaunchAppButton />
             <Link href="/app">
               <button className="min-w-[200px] h-14 bg-white/5 border border-white/10 text-white font-bold rounded-xl text-lg hover:bg-white/10 transition-all">
                 Explore Creators
