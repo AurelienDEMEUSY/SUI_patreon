@@ -1,10 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
 import type { TopbarProps } from '@/types';
+
+function truncateAddress(address: string, chars = 6): string {
+  return `${address.slice(0, chars)}...${address.slice(-chars)}`;
+}
 
 export function Topbar({ className = '' }: TopbarProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const account = useCurrentAccount();
+  const { mutate: disconnect } = useDisconnectWallet();
 
   return (
     <header className={`flex items-center justify-between gap-4 py-2 ${className}`}>
@@ -29,6 +36,24 @@ export function Topbar({ className = '' }: TopbarProps) {
           <span className="material-symbols-outlined text-xl">add</span>
           <span className="hidden sm:inline">Create Post</span>
         </button>
+
+        {/* Wallet info */}
+        {account && (
+          <div className="flex items-center gap-2 glass-card px-4 py-2 rounded-2xl">
+            <div className="size-2 bg-emerald-500 rounded-full" />
+            <span className="text-sm font-mono text-white/70">
+              {truncateAddress(account.address)}
+            </span>
+            <button
+              type="button"
+              onClick={() => disconnect()}
+              className="ml-1 text-white/40 hover:text-white transition-colors"
+              title="Disconnect wallet"
+            >
+              <span className="material-symbols-outlined text-lg">logout</span>
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

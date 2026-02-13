@@ -1,28 +1,13 @@
-export interface Creator {
-    address: string;
-    name: string;
-    bio: string;
-    avatarBlobId: string | null;
-    bannerBlobId: string | null;
-    suinsName: string | null;
-    totalSubscribers: number;
-    totalContent: number;
-    tiers: Tier[];
-    createdAt: number;
-}
+// Barrel export all shared types
+export * from './creator.types';
+export * from './common.types';
+export * from './landing.types';
+export * from './navigation.types';
 
-export interface Tier {
-    id: string;
-    creatorAddress: string;
-    name: string;
-    description: string;
-    priceInMist: number;
-    sealPolicyId: string;
-    benefits: string[];
-    subscriberCount: number;
-    order: number;
-}
+// Re-export from ui.types only what doesn't conflict with common.types
+export type { AvatarProps, BadgeProps } from './ui.types';
 
+// Types that don't have a dedicated file yet
 export type ContentType = 'text' | 'image' | 'video' | 'audio' | 'file';
 
 export interface Content {
@@ -50,10 +35,6 @@ export interface Subscription {
     expiresAt: number;
     isActive: boolean;
     autoRenew: boolean;
-}
-
-export interface SidebarProps {
-    className?: string;
 }
 
 export type WalletStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
