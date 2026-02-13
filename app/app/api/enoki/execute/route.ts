@@ -1,15 +1,7 @@
-import { EnokiClient } from "@mysten/enoki";
 import { NextResponse } from "next/server";
+import { getEnokiServerClient } from "@/enoki/sponsor/createEnokiClient";
 
 export async function POST(request: Request) {
-  const apiKey = process.env.ENOKI_PRIVATE_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "ENOKI_PRIVATE_API_KEY is not set" },
-      { status: 500 }
-    );
-  }
-
   let body: { digest: string; signature: string };
   try {
     body = await request.json();
@@ -29,7 +21,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const client = new EnokiClient({ apiKey });
+    const client = getEnokiServerClient();
     await client.executeSponsoredTransaction({ digest, signature });
     return NextResponse.json({ digest });
   } catch (err) {

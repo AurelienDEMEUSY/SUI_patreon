@@ -25,6 +25,10 @@ function RegisterEnokiWallets({ children }: { children: React.ReactNode }) {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      const ok = isEnokiNetwork(network) && !!apiKey && !!googleClientId;
+      console.log("[Enoki]", ok ? "Enregistrement des wallets (Google…)" : "Skip:", { network, hasApiKey: !!apiKey, hasGoogleClientId: !!googleClientId });
+    }
     if (!isEnokiNetwork(network) || !apiKey || !googleClientId) return;
 
     const { unregister } = registerEnokiWallets({

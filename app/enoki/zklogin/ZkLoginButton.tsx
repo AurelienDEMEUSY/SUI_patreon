@@ -59,23 +59,32 @@ export function ZkLoginButton({
     );
   }
 
+  const hasAnyEnoki = enokiWallets.length > 0;
+
   return (
     <div className={className} data-state="disconnected">
-      {(["google", "facebook", "twitch"] as const).map((provider) => {
-        const wallet = walletsByProvider.get(provider);
-        const label = PROVIDER_LABELS[provider];
-        if (!wallet || !label) return null;
-        return (
-          <button
-            key={provider}
-            type="button"
-            onClick={() => connect({ wallet })}
-            className="rounded-full border border-black/[.08] bg-white px-5 py-2.5 text-base font-medium transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:bg-zinc-900 dark:hover:bg-zinc-800"
-          >
-            {label}
-          </button>
-        );
-      })}
+      {hasAnyEnoki ? (
+        (["google", "facebook", "twitch"] as const).map((provider) => {
+          const wallet = walletsByProvider.get(provider);
+          const label = PROVIDER_LABELS[provider];
+          if (!wallet || !label) return null;
+          return (
+            <button
+              key={provider}
+              type="button"
+              onClick={() => connect({ wallet })}
+              className="rounded-full border border-black/[.08] bg-white px-5 py-2.5 text-base font-medium transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:bg-zinc-900 dark:hover:bg-zinc-800"
+            >
+              {label}
+            </button>
+          );
+        })
+      ) : (
+        <p className="text-sm text-amber-600 dark:text-amber-400">
+          zkLogin non disponible. Vérifiez NEXT_PUBLIC_ENOKI_API_KEY et
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID dans .env puis redémarrez le serveur.
+        </p>
+      )}
     </div>
   );
 }

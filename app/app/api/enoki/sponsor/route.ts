@@ -1,16 +1,8 @@
-import { EnokiClient } from "@mysten/enoki";
 import type { EnokiNetwork } from "@mysten/enoki";
 import { NextResponse } from "next/server";
+import { getEnokiServerClient } from "@/enoki/sponsor/createEnokiClient";
 
 export async function POST(request: Request) {
-  const apiKey = process.env.ENOKI_PRIVATE_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "ENOKI_PRIVATE_API_KEY is not set" },
-      { status: 500 }
-    );
-  }
-
   let body: { transactionKindBytes: string; network?: string; jwt: string };
   try {
     body = await request.json();
@@ -30,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const client = new EnokiClient({ apiKey });
+    const client = getEnokiServerClient();
     const result = await client.createSponsoredTransaction({
       network: (network ?? "testnet") as EnokiNetwork,
       transactionKindBytes,

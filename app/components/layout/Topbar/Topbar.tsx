@@ -1,10 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
 import type { TopbarProps } from '@/types';
+
+function truncateAddress(address: string, chars = 6): string {
+  return `${address.slice(0, chars)}...${address.slice(-chars)}`;
+}
 
 export function Topbar({ className = '' }: TopbarProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const account = useCurrentAccount();
+  const { mutate: disconnect } = useDisconnectWallet();
 
   return (
     <header className={`flex items-center justify-between gap-4 py-2 ${className}`}>
@@ -25,7 +32,7 @@ export function Topbar({ className = '' }: TopbarProps) {
           <span className="material-symbols-outlined">notifications</span>
           <span className="absolute top-3 right-3 size-2 bg-[#3c3cf6] rounded-full border-2 border-[#0a0a18]"></span>
         </button>
-é      </div>
+      </div>
     </header>
   );
 }

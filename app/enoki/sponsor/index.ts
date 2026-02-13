@@ -1,4 +1,4 @@
-export { getEnokiClient } from "./createEnokiClient";
+export { getEnokiServerClient } from "./createEnokiClient";
 export {
   useSponsoredTransaction,
   type SponsorAndExecuteOptions,

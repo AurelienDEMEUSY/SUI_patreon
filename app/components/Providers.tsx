@@ -1,25 +1,77 @@
 'use client';
 
-import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
+import {
+  createNetworkConfig,
+  SuiClientProvider,
+  useSuiClientContext,
+  WalletProvider,
+} from '@mysten/dapp-kit';
+import { isEnokiNetwork, registerEnokiWallets } from '@mysten/enoki';
+import { getJsonRpcFullnodeUrl } from '@mysten/sui/jsonRpc';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
 import '@mysten/dapp-kit/dist/index.css';
 
 const { networkConfig } = createNetworkConfig({
-    testnet: { url: 'https://fullnode.testnet.sui.io:443' },
-    mainnet: { url: 'https://fullnode.mainnet.sui.io:443' },
+  testnet: { url: getJsonRpcFullnodeUrl('testnet'), network: 'testnet' },
+  mainnet: { url: getJsonRpcFullnodeUrl('mainnet'), network: 'mainnet' },
+  devnet: { url: getJsonRpcFullnodeUrl('devnet'), network: 'devnet' },
 });
 
-export function Providers({ children }: { children: React.ReactNode }) {
-    const [queryClient] = useState(() => new QueryClient());
+/**
+ * Registers Enoki (zkLogin) wallets so that "Sign in with Google" appears
+ * in ConnectModal and can be used via useConnectWallet().
+ */
+function RegisterEnokiWallets({ children }: { children: React.ReactNode }) {
+  const { client, network } = useSuiClientContext();
+  const apiKey = process.env.NEXT_PUBLIC_ENOKI_API_KEY;
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
-    return (
-        <QueryClientProvider client={queryClient}>
-            <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
-                <WalletProvider autoConnect>
-                    {children}
-                </WalletProvider>
-            </SuiClientProvider>
-        </QueryClientProvider>
-    );
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const ok = isEnokiNetwork(network) && !!apiKey && !!googleClientId;
+      console.log(
+        '[Enoki]',
+        ok ? 'Registering wallets (Google…)' : 'Skip:',
+        { network, hasApiKey: !!apiKey, hasGoogleClientId: !!googleClientId },
+      );
+    }
+    if (!isEnokiNetwork(network) || !apiKey || !googleClientId) return;
+
+    const { unregister } = registerEnokiWallets({
+      apiKey,
+      providers: {
+        google: {
+          clientId: googleClientId,
+        },
+      },
+      client,
+      network,
+    });
+
+    return unregister;
+  }, [client, network, apiKey, googleClientId]);
+
+  return <>{children}</>;
+}
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
+  const defaultNetwork =
+    (process.env.NEXT_PUBLIC_SUI_NETWORK as 'testnet' | 'mainnet' | 'devnet') ??
+    'testnet';
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SuiClientProvider
+        networks={networkConfig}
+        defaultNetwork={defaultNetwork}
+      >
+        <RegisterEnokiWallets>
+          <WalletProvider autoConnect>{children}</WalletProvider>
+        </RegisterEnokiWallets>
+      </SuiClientProvider>
+    </QueryClientProvider>
+  );
 }
