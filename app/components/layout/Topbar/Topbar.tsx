@@ -25,11 +25,7 @@ export function Topbar({ className = '' }: TopbarProps) {
           <span className="material-symbols-outlined">notifications</span>
           <span className="absolute top-3 right-3 size-2 bg-[#3c3cf6] rounded-full border-2 border-[#0a0a18]"></span>
         </button>
-        <button className="bg-[#3c3cf6] hover:bg-[#3c3cf6]/80 text-white font-bold h-12 px-6 rounded-2xl shadow-lg shadow-[#3c3cf6]/30 transition-all flex items-center gap-2">
-          <span className="material-symbols-outlined text-xl">add</span>
-          <span className="hidden sm:inline">Create Post</span>
-        </button>
-      </div>
+é      </div>
     </header>
   );
 }
