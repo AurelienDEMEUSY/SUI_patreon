@@ -10,6 +10,8 @@ import { useCreatorPosts } from '@/hooks/useCreatorPosts';
 import { CreatorHeader } from '@/components/creator/CreatorHeader';
 import { CreatorStats } from '@/components/creator/CreatorStats';
 import { ProfileTabs } from '@/components/creator/ProfileTabs';
+import { useWithdrawFunds } from '@/hooks/useWithdrawFunds';
+import { useCreatorRevenue } from '@/hooks/useCreatorRevenue';
 import { PostFeed } from '@/components/post/PostFeed';
 import { CreatePostForm } from '@/components/post/CreatePostForm';
 import { TierCard } from '@/components/tier/TierCard';
@@ -28,8 +30,10 @@ export default function CreatorProfilePage() {
     const [showAddTier, setShowAddTier] = useState(false);
     const [showCreatePost, setShowCreatePost] = useState(false);
     const { posts, isLoading: postsLoading, refetch: refetchPosts } = useCreatorPosts(serviceObjectId);
+    const { withdrawFunds, isLoading: isWithdrawing, error: withdrawError, isSuccess: withdrawSuccess } = useWithdrawFunds();
+    const { revenueMist, isLoading: revenueLoading, refetch: refetchRevenue } = useCreatorRevenue(serviceObjectId);
 
-    const isOwnProfile = !!(currentAccount?.address && creator?.address && currentAccount.address === creator.address);
+    const isOwnProfile = !!(currentAccount?.address && creator?.address && currentAccount.address.toLowerCase() === creator.address.toLowerCase());
 
     if (isLoading || isChecking) {
         return (
@@ -98,6 +102,64 @@ export default function CreatorProfilePage() {
             <div className="mb-8 mt-2">
                 <CreatorStats creator={creator} />
             </div>
+
+            {/* Revenue Card — visible on all screen sizes for owner */}
+            {isOwnProfile && serviceObjectId && (
+                <div className="mb-6 lg:hidden">
+                    <div className="stat-card p-5 border border-[#3c3cf6]/20 bg-[#3c3cf6]/[0.03]">
+                        <h4 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-base text-[#3c3cf6]" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
+                            Revenue
+                        </h4>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Available</span>
+                                <span className="text-lg font-black text-white">
+                                    {revenueLoading ? (
+                                        <span className="inline-block w-16 h-5 bg-white/[0.06] rounded animate-pulse" />
+                                    ) : (
+                                        <>{format.mistToSui(revenueMist)} <span className="text-[#3c3cf6] text-xs font-bold">SUI</span></>
+                                    )}
+                                </span>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    const success = await withdrawFunds(serviceObjectId);
+                                    if (success) {
+                                        refetchRevenue();
+                                    }
+                                }}
+                                disabled={isWithdrawing || revenueMist === 0}
+                                className="w-full h-10 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] hover:from-[#4f4ff8] hover:to-[#7c7ff9] text-white font-bold rounded-xl transition-all shadow-[0_0_20px_-5px_rgba(60,60,246,0.4)] hover:shadow-[0_0_30px_-5px_rgba(60,60,246,0.6)] active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100"
+                            >
+                                {isWithdrawing ? (
+                                    <>
+                                        <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                                        Withdrawing…
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined text-base">savings</span>
+                                        Withdraw Funds
+                                    </>
+                                )}
+                            </button>
+                            {withdrawSuccess && (
+                                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold bg-emerald-400/10 px-3 py-2 rounded-lg">
+                                    <span className="material-symbols-outlined text-sm">check_circle</span>
+                                    Funds withdrawn successfully!
+                                </div>
+                            )}
+                            {withdrawError && (
+                                <div className="flex items-center gap-2 text-red-400 text-xs font-bold bg-red-400/10 px-3 py-2 rounded-lg">
+                                    <span className="material-symbols-outlined text-sm">error</span>
+                                    {withdrawError}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Tabs + Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
@@ -205,6 +267,62 @@ export default function CreatorProfilePage() {
                 {/* Right Column: Sidebar (Sticky) */}
                 <div className="hidden lg:block">
                     <div className="sticky top-24 space-y-5">
+                        {/* Creator Revenue — Owner only */}
+                        {isOwnProfile && serviceObjectId && (
+                            <div className="stat-card p-5 border border-[#3c3cf6]/20 bg-[#3c3cf6]/[0.03]">
+                                <h4 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-base text-[#3c3cf6]" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
+                                    Revenue
+                                </h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Available</span>
+                                        <span className="text-lg font-black text-white">
+                                            {revenueLoading ? (
+                                                <span className="inline-block w-16 h-5 bg-white/[0.06] rounded animate-pulse" />
+                                            ) : (
+                                                <>{format.mistToSui(revenueMist)} <span className="text-[#3c3cf6] text-xs font-bold">SUI</span></>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={async () => {
+                                            const success = await withdrawFunds(serviceObjectId);
+                                            if (success) {
+                                                refetchRevenue();
+                                            }
+                                        }}
+                                        disabled={isWithdrawing || revenueMist === 0}
+                                        className="w-full h-10 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] hover:from-[#4f4ff8] hover:to-[#7c7ff9] text-white font-bold rounded-xl transition-all shadow-[0_0_20px_-5px_rgba(60,60,246,0.4)] hover:shadow-[0_0_30px_-5px_rgba(60,60,246,0.6)] active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100"
+                                    >
+                                        {isWithdrawing ? (
+                                            <>
+                                                <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                                                Withdrawing…
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="material-symbols-outlined text-base">savings</span>
+                                                Withdraw Funds
+                                            </>
+                                        )}
+                                    </button>
+                                    {withdrawSuccess && (
+                                        <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold bg-emerald-400/10 px-3 py-2 rounded-lg">
+                                            <span className="material-symbols-outlined text-sm">check_circle</span>
+                                            Funds withdrawn successfully!
+                                        </div>
+                                    )}
+                                    {withdrawError && (
+                                        <div className="flex items-center gap-2 text-red-400 text-xs font-bold bg-red-400/10 px-3 py-2 rounded-lg">
+                                            <span className="material-symbols-outlined text-sm">error</span>
+                                            {withdrawError}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Subscription Status */}
                         {!isOwnProfile && subscription.isSubscribed && creator && (
                             <div className="stat-card p-5 border border-emerald-500/20 bg-emerald-500/[0.03]">

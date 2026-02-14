@@ -10,6 +10,9 @@ import { useCreatorPosts } from '@/hooks/useCreatorPosts';
 import { CreateProfileForm } from '@/components/creator/CreateProfileForm';
 import { CreatePostForm } from '@/components/post/CreatePostForm';
 import { PostFeed } from '@/components/post/PostFeed';
+import { useWithdrawFunds } from '@/hooks/useWithdrawFunds';
+import { useCreatorRevenue } from '@/hooks/useCreatorRevenue';
+import { format } from '@/lib/format';
 
 export default function CreatorHubPage() {
     const router = useRouter();
@@ -25,6 +28,8 @@ export default function CreatorHubPage() {
     const { posts, isLoading: postsLoading, refetch: refetchPosts } = useCreatorPosts(serviceObjectId);
     const [showCreatePost, setShowCreatePost] = useState(false);
     const [showCreateForm, setShowCreateForm] = useState(false);
+    const { withdrawFunds, isLoading: isWithdrawing, error: withdrawError, isSuccess: withdrawSuccess } = useWithdrawFunds();
+    const { revenueMist, isLoading: revenueLoading, refetch: refetchRevenue } = useCreatorRevenue(serviceObjectId);
 
     const hasProfile = !!serviceObjectId;
 
@@ -74,7 +79,7 @@ export default function CreatorHubPage() {
                 </div>
 
                 {/* Stats bar */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="stat-card px-5 py-4 text-center">
                         <div className="text-2xl font-black text-white">{posts.length}</div>
                         <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold mt-1">Posts</div>
@@ -87,6 +92,58 @@ export default function CreatorHubPage() {
                         <div className="text-2xl font-black text-white">{creator?.totalSubscribers || 0}</div>
                         <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold mt-1">Subscribers</div>
                     </div>
+                </div>
+
+                {/* Revenue & Withdraw */}
+                <div className="stat-card p-5 mb-6 border border-[#3c3cf6]/20 bg-[#3c3cf6]/[0.03]">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-2xl text-[#3c3cf6]" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
+                            <div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Available Revenue</div>
+                                <div className="text-2xl font-black text-white mt-0.5">
+                                    {revenueLoading ? (
+                                        <span className="inline-block w-20 h-7 bg-white/[0.06] rounded animate-pulse" />
+                                    ) : (
+                                        <>{format.mistToSui(revenueMist)} <span className="text-[#3c3cf6] text-sm font-bold">SUI</span></>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            onClick={async () => {
+                                if (!serviceObjectId) return;
+                                const success = await withdrawFunds(serviceObjectId);
+                                if (success) refetchRevenue();
+                            }}
+                            disabled={isWithdrawing || revenueMist === 0}
+                            className="h-11 px-6 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] hover:from-[#4f4ff8] hover:to-[#7c7ff9] text-white font-bold rounded-xl transition-all shadow-[0_0_20px_-5px_rgba(60,60,246,0.4)] hover:shadow-[0_0_30px_-5px_rgba(60,60,246,0.6)] active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100 shrink-0"
+                        >
+                            {isWithdrawing ? (
+                                <>
+                                    <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                                    Withdrawing…
+                                </>
+                            ) : (
+                                <>
+                                    <span className="material-symbols-outlined text-base">savings</span>
+                                    Withdraw Funds
+                                </>
+                            )}
+                        </button>
+                    </div>
+                    {withdrawSuccess && (
+                        <div className="mt-3 flex items-center gap-2 text-emerald-400 text-xs font-bold bg-emerald-400/10 px-3 py-2 rounded-lg">
+                            <span className="material-symbols-outlined text-sm">check_circle</span>
+                            Funds withdrawn successfully!
+                        </div>
+                    )}
+                    {withdrawError && (
+                        <div className="mt-3 flex items-center gap-2 text-red-400 text-xs font-bold bg-red-400/10 px-3 py-2 rounded-lg">
+                            <span className="material-symbols-outlined text-sm">error</span>
+                            {withdrawError}
+                        </div>
+                    )}
                 </div>
 
                 {/* Create post quick action */}

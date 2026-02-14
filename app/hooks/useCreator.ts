@@ -36,7 +36,7 @@ function parseServiceToCreator(
     );
 
     return {
-        address: creatorAddress,
+        address: fields.creator || creatorAddress,
         name: fields.name || 'Creator',
         bio: fields.description || '',
         avatarBlobId: fields.avatar_blob_id
