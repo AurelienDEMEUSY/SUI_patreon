@@ -13,6 +13,8 @@ import { useMutation } from "@tanstack/react-query";
 
 export type SponsorAndExecuteOptions = {
   network?: EnokiNetwork;
+  /** Extra object/address IDs to add to allowedAddresses (e.g. user coin objects). */
+  extraAllowedAddresses?: string[];
 };
 
 export type UseSponsoredTransactionResult = {
@@ -50,9 +52,11 @@ export function useSponsoredTransaction(): UseSponsoredTransactionResult {
     mutationFn: async ({
       transaction,
       networkOverride,
+      extraAllowedAddresses,
     }: {
       transaction: Transaction;
       networkOverride?: EnokiNetwork;
+      extraAllowedAddresses?: string[];
     }) => {
       const targetNetwork = (networkOverride ?? network) as EnokiNetwork;
 
@@ -77,6 +81,7 @@ export function useSponsoredTransaction(): UseSponsoredTransactionResult {
           transactionKindBytes,
           network: targetNetwork,
           sender,
+          extraAllowedAddresses,
         }),
       });
       if (!sponsorRes.ok) {
@@ -113,6 +118,7 @@ export function useSponsoredTransaction(): UseSponsoredTransactionResult {
       mutation.mutateAsync({
         transaction,
         networkOverride: options?.network,
+        extraAllowedAddresses: options?.extraAllowedAddresses,
       }),
     isPending: mutation.isPending,
     error: mutation.error as Error | null,
