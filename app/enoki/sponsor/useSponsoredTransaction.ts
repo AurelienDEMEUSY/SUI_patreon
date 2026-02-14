@@ -1,12 +1,11 @@
 "use client";
 
 import {
-  useCurrentWallet,
+  useCurrentAccount,
   useSignTransaction,
   useSuiClient,
   useSuiClientContext,
 } from "@mysten/dapp-kit";
-import { getSession, isEnokiWallet } from "@mysten/enoki";
 import type { EnokiNetwork } from "@mysten/enoki";
 import type { Transaction } from "@mysten/sui/transactions";
 import { toBase64 } from "@mysten/sui/utils";
@@ -25,10 +24,26 @@ export type UseSponsoredTransactionResult = {
   error: Error | null;
 };
 
+/**
+ * Hook to sponsor and execute a transaction via Enoki.
+ *
+ * Uses the "sender" variant of the Enoki API:
+ * - No JWT / zkLogin session required
+ * - Works with any connected wallet (Enoki or standard)
+ * - allowedMoveCallTargets & allowedAddresses are passed inline by the backend
+ *
+ * Flow:
+ *   1. Build tx with onlyTransactionKind: true
+ *   2. POST to /api/enoki/sponsor with { sender, transactionKindBytes, network }
+ *   3. Sign the sponsored bytes with the user's wallet
+ *   4. POST to /api/enoki/execute with { digest, signature }
+ *
+ * @see https://docs.enoki.mystenlabs.com/ts-sdk/examples
+ */
 export function useSponsoredTransaction(): UseSponsoredTransactionResult {
   const client = useSuiClient();
   const { network } = useSuiClientContext();
-  const currentWallet = useCurrentWallet();
+  const currentAccount = useCurrentAccount();
   const { mutateAsync: signTransaction } = useSignTransaction();
 
   const mutation = useMutation({
@@ -41,39 +56,27 @@ export function useSponsoredTransaction(): UseSponsoredTransactionResult {
     }) => {
       const targetNetwork = (networkOverride ?? network) as EnokiNetwork;
 
-      const wallet = currentWallet?.currentWallet ?? null;
-      if (!wallet) {
+      if (!currentAccount) {
         throw new Error("No wallet connected.");
       }
-      if (!isEnokiWallet(wallet)) {
-        throw new Error(
-          "Sponsored transactions require an Enoki (zkLogin) wallet. Connect with Sign in with Google (or another Enoki provider) first."
-        );
-      }
 
-      const session = await getSession(wallet, {
-        network: targetNetwork,
-      });
-      const jwt = session?.jwt;
-      if (!jwt) {
-        throw new Error(
-          "No active zkLogin session. Please sign in again with your Enoki wallet."
-        );
-      }
+      const sender = currentAccount.address;
 
+      // 1. Build transaction kind bytes (no gas data)
       const txBytes = await transaction.build({
         client,
         onlyTransactionKind: true,
       });
       const transactionKindBytes = toBase64(txBytes);
 
+      // 2. Sponsor via backend (sender variant — no JWT needed)
       const sponsorRes = await fetch("/api/enoki/sponsor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           transactionKindBytes,
           network: targetNetwork,
-          jwt,
+          sender,
         }),
       });
       if (!sponsorRes.ok) {
@@ -82,10 +85,12 @@ export function useSponsoredTransaction(): UseSponsoredTransactionResult {
       }
       const { bytes, digest } = await sponsorRes.json();
 
+      // 3. Sign the sponsored transaction bytes
       const { signature } = await signTransaction({
         transaction: bytes,
       });
 
+      // 4. Execute via backend
       const executeRes = await fetch("/api/enoki/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -101,7 +106,10 @@ export function useSponsoredTransaction(): UseSponsoredTransactionResult {
   });
 
   return {
-    sponsorAndExecute: (transaction: Transaction, options?: SponsorAndExecuteOptions) =>
+    sponsorAndExecute: (
+      transaction: Transaction,
+      options?: SponsorAndExecuteOptions
+    ) =>
       mutation.mutateAsync({
         transaction,
         networkOverride: options?.network,

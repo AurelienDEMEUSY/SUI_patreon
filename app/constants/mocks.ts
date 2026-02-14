@@ -12,6 +12,8 @@ const ALICE_TIERS: Tier[] = [
         benefits: ['Behind-the-scenes posts', 'Community chat access', 'Monthly Q&A'],
         subscriberCount: 98,
         order: 1,
+        tierLevel: 1,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_alice_002',
@@ -23,6 +25,8 @@ const ALICE_TIERS: Tier[] = [
         benefits: ['All Supporter benefits', 'Exclusive tutorials', 'Early access', 'HD downloads'],
         subscriberCount: 44,
         order: 2,
+        tierLevel: 2,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_alice_003',
@@ -34,6 +38,8 @@ const ALICE_TIERS: Tier[] = [
         benefits: ['All Premium benefits', '1-on-1 monthly session', 'Source files', 'Credits in projects'],
         subscriberCount: 12,
         order: 3,
+        tierLevel: 3,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
 ];
 
@@ -49,6 +55,8 @@ const BOB_TIERS: Tier[] = [
         benefits: ['Early track releases', 'Behind-the-scenes studio clips', 'Community Discord access'],
         subscriberCount: 340,
         order: 1,
+        tierLevel: 1,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_bob_002',
@@ -60,6 +68,8 @@ const BOB_TIERS: Tier[] = [
         benefits: ['All Listener benefits', 'Unreleased tracks & demos', 'Download stems & loops', 'Monthly live jam session'],
         subscriberCount: 120,
         order: 2,
+        tierLevel: 2,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_bob_003',

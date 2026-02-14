@@ -1,14 +1,26 @@
 import type { EnokiNetwork } from "@mysten/enoki";
 import { NextResponse } from "next/server";
 import { getEnokiServerClient } from "@/enoki/sponsor/createEnokiClient";
+import {
+  ALLOWED_MOVE_CALL_TARGETS,
+  ALLOWED_ADDRESSES,
+} from "@/lib/contract-constants";
 
 /**
- * When using JWT (zkLogin), allowedMoveCallTargets and allowedAddresses
- * must be configured in the Enoki Portal, not passed in the API call.
- * See docs/ENOKI_PORTAL_SETUP.md for the allowlist.
+ * Sponsor a transaction using the "sender" variant of the Enoki API.
+ *
+ * Unlike the JWT variant, this passes `sender` (the user's address) and
+ * `allowedMoveCallTargets` / `allowedAddresses` inline — no Portal config
+ * or paid plan credits required for testnet.
+ *
+ * @see https://docs.enoki.mystenlabs.com/ts-sdk/examples
  */
 export async function POST(request: Request) {
-  let body: { transactionKindBytes: string; network?: string; jwt: string };
+  let body: {
+    transactionKindBytes: string;
+    network?: string;
+    sender: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -18,24 +30,40 @@ export async function POST(request: Request) {
     );
   }
 
-  const { transactionKindBytes, network, jwt } = body;
-  if (!transactionKindBytes || !jwt) {
+  const { transactionKindBytes, network, sender } = body;
+  if (!transactionKindBytes || !sender) {
     return NextResponse.json(
-      { error: "transactionKindBytes and jwt are required" },
+      { error: "transactionKindBytes and sender are required" },
       { status: 400 }
     );
   }
 
   try {
     const client = getEnokiServerClient();
-    const result = await client.createSponsoredTransaction({
-      network: (network ?? "testnet") as EnokiNetwork,
-      transactionKindBytes,
-      jwt,
+    const targetNetwork = (network ?? "testnet") as EnokiNetwork;
+
+    console.log("[sponsor] Requesting sponsored tx:", {
+      network: targetNetwork,
+      sender,
+      transactionKindBytesLength: transactionKindBytes.length,
     });
+
+    const result = await client.createSponsoredTransaction({
+      network: targetNetwork,
+      transactionKindBytes,
+      sender,
+      allowedMoveCallTargets: ALLOWED_MOVE_CALL_TARGETS,
+      allowedAddresses: [...ALLOWED_ADDRESSES, sender],
+    });
+
+    console.log("[sponsor] Success:", { digest: result.digest });
     return NextResponse.json({ bytes: result.bytes, digest: result.digest });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Sponsor failed";
+    console.error("[sponsor] ERROR:", message);
+    if (err instanceof Error) {
+      console.error("[sponsor] Stack:", err.stack);
+    }
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

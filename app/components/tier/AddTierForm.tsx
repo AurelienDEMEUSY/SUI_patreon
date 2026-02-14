@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
+import { useSuiClient } from '@mysten/dapp-kit';
 import { buildAddTier } from '@/lib/contract';
+import { useSponsoredTransaction } from '@/enoki/sponsor';
 
 interface AddTierFormProps {
     serviceObjectId: string;
@@ -30,7 +31,7 @@ export function AddTierForm({ serviceObjectId, existingTierLevels, onSuccess, on
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+    const { sponsorAndExecute } = useSponsoredTransaction();
     const suiClient = useSuiClient();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -55,7 +56,7 @@ export function AddTierForm({ serviceObjectId, existingTierLevels, onSuccess, on
             const priceInMist = Math.round(price * 1_000_000_000);
             const tx = buildAddTier(serviceObjectId, tierLevel, name.trim(), priceInMist, durationMs);
 
-            const result = await signAndExecute({ transaction: tx });
+            const result = await sponsorAndExecute(tx);
             await suiClient.waitForTransaction({ digest: result.digest });
 
             onSuccess();

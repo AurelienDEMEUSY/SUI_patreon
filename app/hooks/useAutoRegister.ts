@@ -82,56 +82,6 @@ export function useAutoRegister() {
         [currentAccount, sponsorAndExecute, suiClient],
     );
 
-    /**
-     * Register as a creator on-chain with user-provided name & description.
-     */
-    const register = useCallback(async (name: string, description: string): Promise<string | null> => {
-        if (!currentAccount) return null;
-
-        setIsRegistering(true);
-        setError(null);
-
-        try {
-            const tx = buildCreateProfile(name, description);
-
-            const result = await sponsorAndExecute(tx);
-
-            const txResult = await suiClient.waitForTransaction({
-                digest: result.digest,
-                options: { showObjectChanges: true },
-            });
-
-            const serviceObj = txResult.objectChanges?.find(
-                (change) =>
-                    change.type === 'created' &&
-                    change.objectType?.includes('::service::Service')
-            );
-
-            if (serviceObj && 'objectId' in serviceObj) {
-                const id = serviceObj.objectId;
-                setServiceObjectId(id);
-                setNeedsRegistration(false);
-                return id;
-            }
-
-            throw new Error('Service object not found in transaction result');
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Registration failed';
-            if (message.includes('ECreatorAlreadyExists') || message.includes('MoveAbort')) {
-                const existingId = await findExistingService(currentAccount.address);
-                if (existingId) {
-                    setServiceObjectId(existingId);
-                    setNeedsRegistration(false);
-                    return existingId;
-                }
-            }
-            setError(message);
-            return null;
-        } finally {
-            setIsRegistering(false);
-        }
-    }, [currentAccount, sponsorAndExecute, suiClient, findExistingService]);
-
     // Check on wallet connect — only detect, don't auto-create
     useEffect(() => {
         if (!currentAccount?.address) {
