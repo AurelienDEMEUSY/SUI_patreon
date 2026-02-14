@@ -4,20 +4,23 @@
 
 /**
  * The Sui network to use. Switch to 'mainnet' for production.
+ * Set via NEXT_PUBLIC_SUI_NETWORK in .env.local.
  */
-export const SUI_NETWORK = "testnet" as const;
+export const SUI_NETWORK = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "testnet") as "testnet" | "mainnet" | "devnet";
 
 /**
  * The deployed Move package ID for the Patreon contract.
- * Update this after running `sui client publish` in the contract/ directory.
+ * Set via NEXT_PUBLIC_PACKAGE_ID in .env.local after running `sui client publish`.
  */
-export const PACKAGE_ID = "0xaf96d62a4f48d290a7b89ff06a378bffa6f52e8c99a522dbbaf809fb659d4bdd";
+export const PACKAGE_ID = process.env.NEXT_PUBLIC_PACKAGE_ID
+    ?? "0xaf96d62a4f48d290a7b89ff06a378bffa6f52e8c99a522dbbaf809fb659d4bdd";
 
 /**
  * The shared Platform object ID created during contract initialization.
- * Update this after deploying — it's emitted in the publish transaction.
+ * Set via NEXT_PUBLIC_PLATFORM_ID in .env.local — emitted in the publish transaction.
  */
-export const PLATFORM_ID = "0x21d04f36c70ce554b59913311a96a8287da4b146793b8640aaddac74fe7e5cce";
+export const PLATFORM_ID = process.env.NEXT_PUBLIC_PLATFORM_ID
+    ?? "0x21d04f36c70ce554b59913311a96a8287da4b146793b8640aaddac74fe7e5cce";
 
 /**
  * Move module names in the package.
