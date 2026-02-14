@@ -22,11 +22,11 @@ function parseServiceToCreator(
                 id: `${serviceObjectId}_tier_${tf.tier_level}`,
                 creatorAddress,
                 name: tf.name || '',
-                description: '',
+                description: '', // Contract doesn't store tier description
                 priceInMist: Number(tf.price || 0),
-                sealPolicyId: serviceObjectId,
-                benefits: [],
-                subscriberCount: 0,
+                sealPolicyId: serviceObjectId, // Seal uses the Service ID
+                benefits: [], // Contract doesn't store benefits list
+                subscriberCount: 0, // Would need separate query
                 order: Number(tf.tier_level || index + 1),
                 tierLevel: Number(tf.tier_level || index + 1),
                 durationMs: Number(tf.duration_ms || 0),
