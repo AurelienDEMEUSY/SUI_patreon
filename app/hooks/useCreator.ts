@@ -43,7 +43,7 @@ function parseServiceToCreator(
             ? getWalrusImageUrl(fields.avatar_blob_id)
             : null,
         bannerBlobId: null,
-        suinsName: null,
+        suinsName: fields.suins_name?.fields?.vec?.[0] ?? null,
         totalSubscribers: 0,
         totalContent: (fields.posts || []).length,
         tiers,
