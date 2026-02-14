@@ -163,3 +163,29 @@ export type CardVariant = 'glass' | 'solid' | 'bordered';
 export type BlurAmount = 'sm' | 'md' | 'lg';
 export type BadgeVariant = 'default' | 'primary' | 'success';
 export type BadgeSize = 'sm' | 'md';
+
+// ============================================================
+// Post types (text + images, encrypted via Walrus + SEAL)
+// ============================================================
+
+export type {
+    PostImage,
+    PostMetadata,
+    OnChainPost,
+    DecryptedImage,
+    DecryptedPost,
+    PostImageUpload,
+    CreatePostFormData,
+    PublishStep,
+    PublishProgress,
+    SupportedImageType,
+} from './post.types';
+
+export {
+    SUPPORTED_IMAGE_TYPES,
+    MAX_IMAGES_PER_POST,
+    MAX_IMAGE_SIZE_BYTES,
+    MAX_TOTAL_UPLOAD_BYTES,
+    MAX_TITLE_LENGTH,
+    MAX_TEXT_LENGTH,
+} from './post.types';

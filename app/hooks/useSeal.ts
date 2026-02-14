@@ -147,7 +147,7 @@ export function useDecrypt(
 
             try {
                 let sk = sessionKey;
-                if (!sk) {
+                if (!sk || sk.isExpired()) {
                     sk = await createAndSign();
                     if (!sk) {
                         throw new Error('Session key creation was cancelled');
@@ -155,15 +155,36 @@ export function useDecrypt(
                 }
 
                 const encryptedData = await downloadFromWalrus(blobId);
-                const plaintext = await decryptContent(
-                    suiClient,
-                    encryptedData,
-                    serviceObjectId,
-                    postId,
-                    sk
-                );
 
-                return plaintext;
+                try {
+                    const plaintext = await decryptContent(
+                        suiClient,
+                        encryptedData,
+                        serviceObjectId,
+                        postId,
+                        sk
+                    );
+                    return plaintext;
+                } catch (decryptErr) {
+                    // If the session key signature is invalid (expired/stale), retry with a fresh one
+                    const msg = decryptErr instanceof Error ? decryptErr.message : '';
+                    if (msg.includes('InvalidUserSignature') || msg.includes('invalid')) {
+                        console.warn('[useDecrypt] Session key rejected, creating a fresh one…');
+                        const freshSk = await createAndSign();
+                        if (!freshSk) {
+                            throw new Error('Session key re-creation was cancelled');
+                        }
+                        const plaintext = await decryptContent(
+                            suiClient,
+                            encryptedData,
+                            serviceObjectId,
+                            postId,
+                            freshSk
+                        );
+                        return plaintext;
+                    }
+                    throw decryptErr;
+                }
             } catch (err) {
                 const errMsg = err instanceof Error ? err.message : 'Decryption failed';
                 setError(errMsg);
