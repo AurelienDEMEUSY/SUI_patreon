@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { useSearch } from '@/hooks/useSearch';
+import { usePostContent } from '@/hooks/usePostContent';
 import { Avatar } from '@/components/ui/Avatar';
 import type { Creator } from '@/types';
 import type { LatestPostItem } from '@/hooks/useLatestPosts';
@@ -32,8 +34,26 @@ function CreatorRow({ creator, onClick }: { creator: Creator; onClick?: () => vo
   );
 }
 
-/** Articles publics uniquement (pas ceux qui nécessitent signature / abo). */
+/**
+ * Affiche un article si l'utilisateur y a accès : public (requiredTier === 0)
+ * ou déverrouillé après signature (abo actif).
+ */
 function ArticleRow({ post, onClick }: { post: LatestPostItem; onClick?: () => void }) {
+  const { isUnlocked, unlock } = usePostContent(
+    post.serviceObjectId,
+    post.onChainPost
+  );
+  const isPublic = post.onChainPost.requiredTier === 0;
+  const hasAccess = isPublic || isUnlocked;
+
+  useEffect(() => {
+    if (!isPublic && !isUnlocked) {
+      unlock();
+    }
+  }, [isPublic, isUnlocked, unlock]);
+
+  if (!hasAccess) return null;
+
   return (
     <Link
       href={`/creator/${post.creatorAddress}`}

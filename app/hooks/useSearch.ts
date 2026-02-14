@@ -25,7 +25,7 @@ function matchQuery(text: string | null | undefined, query: string): boolean {
  */
 export function useSearch(query: string | null) {
   const { creators, isLoading: creatorsLoading, error: creatorsError } = useAllCreators();
-  const { posts, isLoading: postsLoading, error: postsError } = useLatestPosts(50, true);
+  const { posts, isLoading: postsLoading, error: postsError } = useLatestPosts(50, false);
 
   const filtered = useMemo(() => {
     const q = (query ?? '').trim();

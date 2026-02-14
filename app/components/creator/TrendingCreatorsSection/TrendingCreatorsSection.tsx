@@ -112,9 +112,6 @@ export function TrendingCreatorsSection({
             {creators.map((creator) => (
               <TrendingCreatorCard key={creator.address} creator={creator} />
             ))}
-            {creators.map((creator) => (
-              <TrendingCreatorCard key={creator.address} creator={creator} />
-            ))}
           </div>
         </div>
       )}
