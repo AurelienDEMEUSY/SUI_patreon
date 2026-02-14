@@ -48,6 +48,10 @@ export const ALLOWED_MOVE_CALL_TARGETS: string[] = [
     `${PACKAGE_ID}::${SERVICE_MODULE}::withdraw_creator_funds`,
     `${PACKAGE_ID}::${SERVICE_MODULE}::delete_creator_profile`,
     `${PACKAGE_ID}::${SERVICE_MODULE}::seal_approve`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::react_to_post`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::remove_reaction`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::add_comment`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::delete_comment`,
     `${PACKAGE_ID}::${SUBSCRIPTION_MODULE}::subscribe`,
 ];
 

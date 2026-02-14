@@ -21,6 +21,7 @@ import type {
     PostImageUpload,
     DecryptedImage,
     OnChainPost,
+    OnChainComment,
 } from '@/types/post.types';
 import {
     SUPPORTED_IMAGE_TYPES,
@@ -323,6 +324,28 @@ export function deserializeMetadata(data: Uint8Array): PostMetadata {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseOnChainPost(raw: any): OnChainPost {
     const fields = raw.fields || raw;
+
+    // Parse reactions VecMap -> Record<address, number>
+    const reactions: Record<string, number> = {};
+    const rawReactions = fields.reactions?.fields?.contents || fields.reactions?.contents || [];
+    for (const entry of rawReactions) {
+        const ef = entry.fields || entry;
+        const key = String(ef.key || '');
+        const value = Number(ef.value || 0);
+        if (key) reactions[key] = value;
+    }
+
+    // Parse comments vector
+    const rawComments = fields.comments || [];
+    const comments: OnChainComment[] = rawComments.map((c: any) => {
+        const cf = c.fields || c;
+        return {
+            author: String(cf.author || ''),
+            content: String(cf.content || ''),
+            createdAtMs: Number(cf.created_at_ms ?? cf.createdAtMs ?? 0),
+        };
+    });
+
     return {
         postId: Number(fields.post_id ?? fields.postId ?? 0),
         title: String(fields.title || ''),
@@ -330,6 +353,10 @@ export function parseOnChainPost(raw: any): OnChainPost {
         dataBlobId: String(fields.data_blob_id || fields.dataBlobId || ''),
         requiredTier: Number(fields.required_tier ?? fields.requiredTier ?? 0),
         createdAtMs: Number(fields.created_at_ms ?? fields.createdAtMs ?? 0),
+        likes: Number(fields.likes ?? 0),
+        dislikes: Number(fields.dislikes ?? 0),
+        reactions,
+        comments,
     };
 }
 

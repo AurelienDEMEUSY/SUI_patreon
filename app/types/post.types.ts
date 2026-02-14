@@ -62,6 +62,20 @@ export interface PostMetadata {
 }
 
 // ============================================================
+// On-chain comment representation
+// ============================================================
+
+/** A comment as read from the on-chain Post struct. */
+export interface OnChainComment {
+    /** Address of the comment author */
+    author: string;
+    /** Comment text content */
+    content: string;
+    /** Creation timestamp in milliseconds */
+    createdAtMs: number;
+}
+
+// ============================================================
 // On-chain post representation
 // ============================================================
 
@@ -82,6 +96,14 @@ export interface OnChainPost {
     requiredTier: number;
     /** Creation timestamp in milliseconds */
     createdAtMs: number;
+    /** Number of likes (thumbs up) */
+    likes: number;
+    /** Number of dislikes (thumbs down) */
+    dislikes: number;
+    /** Map of user address -> reaction (1=like, 2=dislike) */
+    reactions: Record<string, number>;
+    /** Comments on this post */
+    comments: OnChainComment[];
 }
 
 // ============================================================

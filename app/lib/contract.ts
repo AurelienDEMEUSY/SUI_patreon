@@ -307,3 +307,88 @@ export function buildRemoveSuinsName(
     });
     return tx;
 }
+
+// ============================================================
+// Reactions & Comments
+// ============================================================
+
+/**
+ * React to a post (1 = like, 2 = dislike). Toggle: same reaction removes it.
+ */
+export function buildReactToPost(
+    serviceObjectId: string,
+    postId: number,
+    reaction: 1 | 2
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::react_to_post`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.u64(postId),
+            tx.pure.u8(reaction),
+            tx.object("0x6"), // Clock
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Remove a reaction from a post.
+ */
+export function buildRemoveReaction(
+    serviceObjectId: string,
+    postId: number
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::remove_reaction`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.u64(postId),
+            tx.object("0x6"), // Clock
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Add a comment to a post.
+ */
+export function buildAddComment(
+    serviceObjectId: string,
+    postId: number,
+    content: string
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::add_comment`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.u64(postId),
+            tx.pure.string(content),
+            tx.object("0x6"), // Clock
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Delete a comment from a post.
+ */
+export function buildDeleteComment(
+    serviceObjectId: string,
+    postId: number,
+    commentIndex: number
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::delete_comment`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.u64(postId),
+            tx.pure.u64(commentIndex),
+        ],
+    });
+    return tx;
+}

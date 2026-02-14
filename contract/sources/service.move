@@ -33,6 +33,9 @@ const ETierInUse: u64 = 12;
 const EHasSubscribers: u64 = 13;
 const ESuinsNameTaken: u64 = 14;
 const ESuinsNameNotSet: u64 = 15;
+const EInvalidReaction: u64 = 16;
+const ECommentNotFound: u64 = 17;
+const ENotCommentAuthor: u64 = 18;
 
 // ============================================================
 // Events
@@ -77,6 +80,25 @@ public struct SuinsNameLinked has copy, drop {
 public struct SuinsNameRemoved has copy, drop {
     creator: address,
     suins_name: String,
+}
+
+public struct PostReacted has copy, drop {
+    user: address,
+    post_id: u64,
+    /// 0 = removed, 1 = like, 2 = dislike
+    reaction: u8,
+}
+
+public struct CommentAdded has copy, drop {
+    user: address,
+    post_id: u64,
+    comment_index: u64,
+}
+
+public struct CommentDeleted has copy, drop {
+    user: address,
+    post_id: u64,
+    comment_index: u64,
 }
 
 // ============================================================
@@ -487,6 +509,96 @@ entry fun delete_post(
 }
 
 // ============================================================
+// Reactions & Comments
+// ============================================================
+
+/// React to a post (1 = like, 2 = dislike). Toggle: re-sending same reaction removes it.
+/// Access: creator always allowed; others need active subscription >= required_tier (free posts: anyone).
+entry fun react_to_post(
+    service: &mut Service,
+    post_id: u64,
+    reaction: u8,
+    clock: &Clock,
+    ctx: &TxContext,
+) {
+    assert!(reaction == 1 || reaction == 2, EInvalidReaction);
+
+    let caller = ctx.sender();
+    let post_idx = find_post_index(service, post_id);
+    let required_tier = types::post_required_tier(&service.posts[post_idx]);
+
+    // Access check (skip for creator & free posts)
+    assert_interaction_access(service, caller, required_tier, clock);
+
+    let previous = types::set_reaction(&mut service.posts[post_idx], caller, reaction);
+
+    // Emit: if same reaction was toggled off, emit 0 (removed), otherwise emit new reaction
+    let emitted_reaction = if (previous == reaction) { 0u8 } else { reaction };
+    event::emit(PostReacted { user: caller, post_id, reaction: emitted_reaction });
+}
+
+/// Remove a reaction from a post.
+entry fun remove_reaction(
+    service: &mut Service,
+    post_id: u64,
+    clock: &Clock,
+    ctx: &TxContext,
+) {
+    let caller = ctx.sender();
+    let post_idx = find_post_index(service, post_id);
+    let required_tier = types::post_required_tier(&service.posts[post_idx]);
+
+    assert_interaction_access(service, caller, required_tier, clock);
+
+    types::remove_reaction(&mut service.posts[post_idx], caller);
+
+    event::emit(PostReacted { user: caller, post_id, reaction: 0 });
+}
+
+/// Add a comment to a post.
+/// Access: creator always allowed; others need active subscription >= required_tier (free posts: anyone).
+entry fun add_comment(
+    service: &mut Service,
+    post_id: u64,
+    content: String,
+    clock: &Clock,
+    ctx: &TxContext,
+) {
+    let caller = ctx.sender();
+    let post_idx = find_post_index(service, post_id);
+    let required_tier = types::post_required_tier(&service.posts[post_idx]);
+
+    assert_interaction_access(service, caller, required_tier, clock);
+
+    let comment = types::new_comment(caller, content, clock.timestamp_ms());
+    let comment_index = types::post_comment_count(&service.posts[post_idx]);
+    types::add_comment(&mut service.posts[post_idx], comment);
+
+    event::emit(CommentAdded { user: caller, post_id, comment_index });
+}
+
+/// Delete a comment from a post. Only the comment author or the creator can delete.
+entry fun delete_comment(
+    service: &mut Service,
+    post_id: u64,
+    comment_index: u64,
+    ctx: &TxContext,
+) {
+    let caller = ctx.sender();
+    let post_idx = find_post_index(service, post_id);
+
+    let comment_count = types::post_comment_count(&service.posts[post_idx]);
+    assert!(comment_index < comment_count, ECommentNotFound);
+
+    let comment_author = types::get_comment_author(&service.posts[post_idx], comment_index);
+    assert!(caller == comment_author || caller == service.creator, ENotCommentAuthor);
+
+    types::remove_comment(&mut service.posts[post_idx], comment_index);
+
+    event::emit(CommentDeleted { user: caller, post_id, comment_index });
+}
+
+// ============================================================
 // Creator revenue withdrawal
 // ============================================================
 
@@ -617,6 +729,24 @@ public fun get_creator_avatar(service: &Service): String { service.avatar_blob_i
 public fun get_service_creator(service: &Service): address { service.creator }
 public fun get_suins_name(service: &Service): Option<String> { service.suins_name }
 
+/// Get likes count for a post.
+public fun get_post_likes(service: &Service, post_id: u64): u64 {
+    let idx = find_post_index(service, post_id);
+    types::post_likes(&service.posts[idx])
+}
+
+/// Get dislikes count for a post.
+public fun get_post_dislikes(service: &Service, post_id: u64): u64 {
+    let idx = find_post_index(service, post_id);
+    types::post_dislikes(&service.posts[idx])
+}
+
+/// Get comment count for a post.
+public fun get_post_comment_count(service: &Service, post_id: u64): u64 {
+    let idx = find_post_index(service, post_id);
+    types::post_comment_count(&service.posts[idx])
+}
+
 // ============================================================
 // Package-internal helpers (for subscription module)
 // ============================================================
@@ -668,4 +798,42 @@ public(package) fun set_subscriber(
     } else {
         service.subscribers.add(addr, types::new_subscription(tier, expires_at_ms));
     };
+}
+
+// ============================================================
+// Internal helpers
+// ============================================================
+
+/// Find a post's index in the posts vector by post_id. Aborts if not found.
+fun find_post_index(service: &Service, post_id: u64): u64 {
+    let len = service.posts.length();
+    let mut i = 0;
+    while (i < len) {
+        if (types::post_id(&service.posts[i]) == post_id) {
+            return i
+        };
+        i = i + 1;
+    };
+    abort EPostNotFound
+}
+
+/// Assert that a caller can interact (react/comment) with a post.
+/// Creator always allowed. Free posts (tier 0) open to everyone.
+/// Otherwise, caller must have an active subscription >= required_tier.
+fun assert_interaction_access(
+    service: &Service,
+    caller: address,
+    required_tier: u64,
+    clock: &Clock,
+) {
+    // Free post — anyone can interact
+    if (required_tier == 0) { return };
+    // Creator always has access
+    if (caller == service.creator) { return };
+    // Must have active subscription with sufficient tier
+    assert!(service.subscribers.contains(caller), ENoAccess);
+    let sub = &service.subscribers[caller];
+    let now = clock.timestamp_ms();
+    assert!(types::subscription_expires_at_ms(sub) > now, ENoAccess);
+    assert!(types::subscription_tier(sub) >= required_tier, ENoAccess);
 }
