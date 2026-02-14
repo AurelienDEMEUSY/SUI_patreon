@@ -6,10 +6,12 @@ import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useCreator } from '@/hooks/useCreator';
 import { useAutoRegister } from '@/hooks/useAutoRegister';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useCreatorPosts } from '@/hooks/useCreatorPosts';
 import { CreatorHeader } from '@/components/creator/CreatorHeader';
 import { CreatorStats } from '@/components/creator/CreatorStats';
 import { ProfileTabs } from '@/components/creator/ProfileTabs';
-import { ContentFeed } from '@/components/content/ContentFeed';
+import { PostFeed } from '@/components/post/PostFeed';
+import { CreatePostForm } from '@/components/post/CreatePostForm';
 import { TierCard } from '@/components/tier/TierCard';
 import { AddTierForm } from '@/components/tier/AddTierForm';
 import { format } from '@/lib/format';
@@ -24,6 +26,8 @@ export default function CreatorProfilePage() {
     const subscription = useSubscriptionStatus(serviceObjectId);
     const [activeTab, setActiveTab] = useState('posts');
     const [showAddTier, setShowAddTier] = useState(false);
+    const [showCreatePost, setShowCreatePost] = useState(false);
+    const { posts, isLoading: postsLoading, refetch: refetchPosts } = useCreatorPosts(serviceObjectId);
 
     const isOwnProfile = !!(currentAccount?.address && creator?.address && currentAccount.address === creator.address);
 
@@ -81,7 +85,7 @@ export default function CreatorProfilePage() {
                 serviceObjectId={serviceObjectId}
                 isOwnProfile={isOwnProfile}
                 onAddTier={() => setShowAddTier(true)}
-                onCreatePost={() => {/* TODO: create post flow */}}
+                onCreatePost={() => setShowCreatePost(true)}
             />
 
             {/* Stats Row */}
@@ -97,7 +101,24 @@ export default function CreatorProfilePage() {
 
                     <div className="min-h-[400px]">
                         {activeTab === 'posts' && (
-                            <ContentFeed content={[]} />
+                            <div>
+                                {/* Create Post button for owner */}
+                                {isOwnProfile && serviceObjectId && (
+                                    <button
+                                        onClick={() => setShowCreatePost(true)}
+                                        className="w-full mb-5 py-4 rounded-2xl border-2 border-dashed border-white/[0.08] hover:border-[#3c3cf6]/40 bg-white/[0.02] hover:bg-[#3c3cf6]/5 transition-all flex items-center justify-center gap-2 text-sm font-bold text-gray-400 hover:text-[#3c3cf6] group"
+                                    >
+                                        <span className="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">edit_note</span>
+                                        Create a new post
+                                    </button>
+                                )}
+                                <PostFeed
+                                    posts={posts}
+                                    serviceObjectId={serviceObjectId || ''}
+                                    isOwnProfile={isOwnProfile}
+                                    isLoading={postsLoading}
+                                />
+                            </div>
                         )}
 
                         {activeTab === 'about' && (
@@ -282,11 +303,23 @@ export default function CreatorProfilePage() {
                     existingTierLevels={creator.tiers.map((t) => t.tierLevel)}
                     onSuccess={() => {
                         setShowAddTier(false);
-                        // Reload page to fetch updated tiers from on-chain
                         router.refresh();
                         window.location.reload();
                     }}
                     onClose={() => setShowAddTier(false)}
+                />
+            )}
+
+            {/* Create Post Modal */}
+            {showCreatePost && serviceObjectId && (
+                <CreatePostForm
+                    serviceObjectId={serviceObjectId}
+                    tiers={creator.tiers}
+                    onSuccess={() => {
+                        setShowCreatePost(false);
+                        refetchPosts();
+                    }}
+                    onClose={() => setShowCreatePost(false)}
                 />
             )}
         </div>
