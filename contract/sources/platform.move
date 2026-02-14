@@ -6,6 +6,7 @@ use sui::table::{Self, Table};
 use sui::coin;
 use sui::sui::SUI;
 use sui::balance::{Self, Balance};
+use std::string::String;
 
 // ============================================================
 // Error codes
@@ -26,6 +27,8 @@ public struct Platform has key {
     platform_fee_bps: u64,
     /// Accumulated platform fees
     platform_fees: Balance<SUI>,
+    /// SuiNS subname -> Creator address (for uniqueness & discovery)
+    suins_names: Table<String, address>,
 }
 
 /// Admin capability for the platform.
@@ -44,6 +47,7 @@ fun init(ctx: &mut TxContext) {
         creators: table::new(ctx),
         platform_fee_bps: 500, // 5% platform fee
         platform_fees: balance::zero(),
+        suins_names: table::new(ctx),
     };
     transfer::share_object(platform);
 
@@ -112,6 +116,27 @@ public(package) fun get_fee_bps(platform: &Platform): u64 {
 
 public(package) fun add_platform_fee(platform: &mut Platform, fee: Balance<SUI>) {
     balance::join(&mut platform.platform_fees, fee);
+}
+
+// ============================================================
+// SuiNS helpers (package-internal)
+// ============================================================
+
+public(package) fun has_suins_name(platform: &Platform, name: String): bool {
+    platform.suins_names.contains(name)
+}
+
+public(package) fun register_suins_name(platform: &mut Platform, name: String, creator: address) {
+    platform.suins_names.add(name, creator);
+}
+
+public(package) fun unregister_suins_name(platform: &mut Platform, name: String) {
+    platform.suins_names.remove(name);
+}
+
+/// Resolve a SuiNS subname to a creator address.
+public fun resolve_suins_name(platform: &Platform, name: String): address {
+    *platform.suins_names.borrow(name)
 }
 
 // ============================================================

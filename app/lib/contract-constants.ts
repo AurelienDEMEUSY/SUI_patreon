@@ -64,3 +64,19 @@ export const WALRUS_AGGREGATOR_URL = "https://aggregator.walrus-testnet.walrus.s
  * Number of Walrus storage epochs (1 epoch ≈ 1 day on testnet).
  */
 export const WALRUS_EPOCHS = 5;
+
+// ============================================================
+// SuiNS Configuration
+// ============================================================
+
+/**
+ * The parent SuiNS name under which creator subnames are created.
+ * e.g., "alice.patreon.sui"
+ */
+export const SUINS_PARENT_NAME = "patreon.sui";
+
+/**
+ * Object ID of the SuinsRegistration NFT for the parent name (patreon.sui).
+ * The admin wallet that signs subname creation must own this NFT.
+ */
+export const SUINS_PARENT_NFT_ID = "0x91ea4d5e68745fd48494687c347c87c9088674a795d260c7b7d854d9f8b3f12e";
