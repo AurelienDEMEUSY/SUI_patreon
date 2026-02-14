@@ -22,6 +22,8 @@ export interface Tier {
     benefits: string[];
     subscriberCount: number;
     order: number;
+    tierLevel: number;
+    durationMs: number;
 }
 
 export type ContentType = 'text' | 'image' | 'video' | 'audio' | 'file';
@@ -151,6 +153,7 @@ export interface BadgeProps {
 
 export interface CreatorHeaderProps {
     creator: Creator;
+    serviceObjectId?: string | null;
     className?: string;
 }
 

@@ -1,21 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useCreator } from '@/hooks/useCreator';
 import { useAutoRegister } from '@/hooks/useAutoRegister';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { CreatorHeader } from '@/components/creator/CreatorHeader';
 import { CreatorStats } from '@/components/creator/CreatorStats';
 import { ProfileTabs } from '@/components/creator/ProfileTabs';
 import { ContentFeed } from '@/components/content/ContentFeed';
 import { TierCard } from '@/components/tier/TierCard';
+import { AddTierForm } from '@/components/tier/AddTierForm';
+import { format } from '@/lib/format';
 
 export default function CreatorProfilePage() {
     const params = useParams();
+    const router = useRouter();
     const address = params.address as string;
+    const currentAccount = useCurrentAccount();
     const { creator, serviceObjectId, isLoading, error } = useCreator(address);
     const { isRegistering, isChecking } = useAutoRegister();
+    const subscription = useSubscriptionStatus(serviceObjectId);
     const [activeTab, setActiveTab] = useState('posts');
+    const [showAddTier, setShowAddTier] = useState(false);
+
+    const isOwnProfile = !!(currentAccount?.address && creator?.address && currentAccount.address === creator.address);
 
     if (isLoading || isChecking) {
         return (
@@ -66,7 +76,13 @@ export default function CreatorProfilePage() {
             )}
 
             {/* Hero Header */}
-            <CreatorHeader creator={creator} />
+            <CreatorHeader
+                creator={creator}
+                serviceObjectId={serviceObjectId}
+                isOwnProfile={isOwnProfile}
+                onAddTier={() => setShowAddTier(true)}
+                onCreatePost={() => {/* TODO: create post flow */}}
+            />
 
             {/* Stats Row */}
             <div className="mb-8 mt-2">
@@ -113,6 +129,17 @@ export default function CreatorProfilePage() {
 
                         {activeTab === 'membership' && (
                             <div className="grid grid-cols-1 gap-5">
+                                {/* Owner: Add Tier button */}
+                                {isOwnProfile && serviceObjectId && (
+                                    <button
+                                        onClick={() => setShowAddTier(true)}
+                                        className="w-full py-4 rounded-2xl border-2 border-dashed border-white/[0.08] hover:border-[#3c3cf6]/40 bg-white/[0.02] hover:bg-[#3c3cf6]/5 transition-all flex items-center justify-center gap-2 text-sm font-bold text-gray-400 hover:text-[#3c3cf6] group"
+                                    >
+                                        <span className="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">add_circle</span>
+                                        Add a new tier
+                                    </button>
+                                )}
+
                                 {creator.tiers.length > 0 ? (
                                     creator.tiers.map((tier) => (
                                         <TierCard
@@ -127,7 +154,20 @@ export default function CreatorProfilePage() {
                                             <span className="material-symbols-outlined text-3xl text-gray-600">workspace_premium</span>
                                         </div>
                                         <h3 className="text-lg font-bold text-white mb-1.5">No membership tiers</h3>
-                                        <p className="text-gray-500 text-sm max-w-xs">This creator hasn&apos;t set up any subscription tiers yet.</p>
+                                        <p className="text-gray-500 text-sm max-w-xs">
+                                            {isOwnProfile
+                                                ? 'Create your first tier so supporters can subscribe!'
+                                                : "This creator hasn\u0027t set up any subscription tiers yet."}
+                                        </p>
+                                        {isOwnProfile && serviceObjectId && (
+                                            <button
+                                                onClick={() => setShowAddTier(true)}
+                                                className="mt-6 h-11 px-7 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] text-white font-bold rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(60,60,246,0.4)] hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.6)] active:scale-95 flex items-center justify-center gap-2 text-sm"
+                                            >
+                                                <span className="material-symbols-outlined text-lg">add_circle</span>
+                                                Create First Tier
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -138,6 +178,43 @@ export default function CreatorProfilePage() {
                 {/* Right Column: Sidebar (Sticky) */}
                 <div className="hidden lg:block">
                     <div className="sticky top-24 space-y-5">
+                        {/* Subscription Status */}
+                        {!isOwnProfile && subscription.isSubscribed && creator && (
+                            <div className="stat-card p-5 border border-emerald-500/20 bg-emerald-500/[0.03]">
+                                <h4 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-base text-emerald-400" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                                    Your Subscription
+                                </h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Tier</span>
+                                        <span className="text-sm font-bold text-emerald-400">
+                                            {creator.tiers.find(t => t.tierLevel === subscription.tierLevel)?.name || `Tier ${subscription.tierLevel}`}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Status</span>
+                                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                            Active
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Expires</span>
+                                        <span className="text-xs font-medium text-gray-400">
+                                            {new Date(subscription.expiresAtMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Time Left</span>
+                                        <span className="text-xs font-medium text-gray-400">
+                                            {format.duration(subscription.expiresAtMs - Date.now())}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Quick About */}
                         {activeTab !== 'about' && (
                             <div className="stat-card p-5">
@@ -197,6 +274,21 @@ export default function CreatorProfilePage() {
                     </div>
                 </div>
             </div>
+
+            {/* Add Tier Modal */}
+            {showAddTier && serviceObjectId && (
+                <AddTierForm
+                    serviceObjectId={serviceObjectId}
+                    existingTierLevels={creator.tiers.map((t) => t.tierLevel)}
+                    onSuccess={() => {
+                        setShowAddTier(false);
+                        // Reload page to fetch updated tiers from on-chain
+                        router.refresh();
+                        window.location.reload();
+                    }}
+                    onClose={() => setShowAddTier(false)}
+                />
+            )}
         </div>
     );
 }

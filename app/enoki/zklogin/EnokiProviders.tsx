@@ -36,6 +36,7 @@ function RegisterEnokiWallets({ children }: { children: React.ReactNode }) {
       providers: {
         google: {
           clientId: googleClientId,
+          redirectUrl: window.location.origin,
         },
       },
       client,
