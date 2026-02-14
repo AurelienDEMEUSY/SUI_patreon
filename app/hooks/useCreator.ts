@@ -17,19 +17,19 @@ function parseServiceToCreator(
     const tiers: Tier[] = (fields.tiers || []).map(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (t: any, index: number) => {
-            const tierFields = t.fields || t;
+            const tf = t.fields || t;
             return {
-                id: `${serviceObjectId}_tier_${tierFields.tier_level}`,
+                id: `${serviceObjectId}_tier_${tf.tier_level}`,
                 creatorAddress,
-                name: tierFields.name || '',
-                description: '', // Contract doesn't store tier description
-                priceInMist: Number(tierFields.price || 0),
-                sealPolicyId: serviceObjectId, // Seal uses the Service ID
-                benefits: [], // Contract doesn't store benefits list
-                subscriberCount: 0, // Would need separate query
-                order: Number(tierFields.tier_level || index + 1),
-                tierLevel: Number(tierFields.tier_level || index + 1),
-                durationMs: Number(tierFields.duration_ms || 0),
+                name: tf.name || '',
+                description: '',
+                priceInMist: Number(tf.price || 0),
+                sealPolicyId: serviceObjectId,
+                benefits: [],
+                subscriberCount: 0,
+                order: Number(tf.tier_level || index + 1),
+                tierLevel: Number(tf.tier_level || index + 1),
+                durationMs: Number(tf.duration_ms || 0),
             };
         }
     );
@@ -94,8 +94,18 @@ export function useCreator(addressOrServiceId: string | null) {
                         setServiceObjectId(foundServiceId);
                     }
                 } else {
-                    // No on-chain Service found — leave creator as null
-                    setCreator(null);
+                    setCreator({
+                        address: effectiveAddress,
+                        name: 'New Creator',
+                        bio: 'Welcome! Connect your wallet and start creating.',
+                        avatarBlobId: null,
+                        bannerBlobId: null,
+                        suinsName: null,
+                        totalSubscribers: 0,
+                        totalContent: 0,
+                        tiers: [],
+                        createdAt: Math.floor(Date.now() / 1000),
+                    });
                     setServiceObjectId(null);
                 }
             } catch (err) {
