@@ -3,13 +3,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { buildCreateProfile } from '@/lib/contract';
-import { PACKAGE_ID } from '@/lib/contract-constants';
+import { findActiveServiceId } from '@/lib/service-lookup';
 
 /**
- * Auto-registration hook:
- * When a wallet connects, checks if the user already has a Service object on-chain.
- * If NOT found, sets `needsRegistration = true` so the UI can show a form.
- * The `register()` function is called manually after the user fills the form.
+ * Auto-registration hook.
+ *
+ * On wallet connect, checks whether the user already has an active Service object on-chain.
+ * - Found  → sets `serviceObjectId` (user is a creator).
+ * - Not found → sets `needsRegistration = true` so the UI can show the create-profile form.
+ *
+ * The `register()` callback is invoked manually after the user fills in the form.
  */
 export function useAutoRegister() {
     const currentAccount = useCurrentAccount();
@@ -24,98 +27,57 @@ export function useAutoRegister() {
 
     const checkedRef = useRef<string | null>(null);
 
-    /**
-     * Query on-chain to find a Service object owned by this creator.
-     */
-    const findExistingService = useCallback(async (address: string): Promise<string | null> => {
-        try {
-            const events = await suiClient.queryEvents({
-                query: {
-                    MoveEventType: `${PACKAGE_ID}::service::CreatorRegistered`,
-                },
-                limit: 50,
-            });
+    /** Register as a creator on-chain with user-provided name & description. */
+    const register = useCallback(
+        async (name: string, description: string): Promise<string | null> => {
+            if (!currentAccount) return null;
 
-            for (const event of events.data) {
-                const parsedJson = event.parsedJson as { creator?: string };
-                if (parsedJson?.creator === address) {
-                    const txDigest = event.id.txDigest;
-                    const txDetails = await suiClient.getTransactionBlock({
-                        digest: txDigest,
-                        options: { showObjectChanges: true },
-                    });
+            setIsRegistering(true);
+            setError(null);
 
-                    const serviceObj = txDetails.objectChanges?.find(
-                        (change) =>
-                            change.type === 'created' &&
-                            change.objectType?.includes('::service::Service')
-                    );
+            try {
+                const tx = buildCreateProfile(name, description);
+                const result = await signAndExecute({ transaction: tx });
 
-                    if (serviceObj && 'objectId' in serviceObj) {
-                        return serviceObj.objectId;
+                const txResult = await suiClient.waitForTransaction({
+                    digest: result.digest,
+                    options: { showObjectChanges: true },
+                });
+
+                const created = txResult.objectChanges?.find(
+                    (c) => c.type === 'created' && c.objectType?.includes('::service::Service'),
+                );
+
+                if (created && 'objectId' in created) {
+                    setServiceObjectId(created.objectId);
+                    setNeedsRegistration(false);
+                    return created.objectId;
+                }
+
+                throw new Error('Service object not found in transaction result');
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Registration failed';
+
+                // Handle race-condition: profile already exists on-chain
+                if (message.includes('ECreatorAlreadyExists') || message.includes('MoveAbort')) {
+                    const existingId = await findActiveServiceId(suiClient, currentAccount.address);
+                    if (existingId) {
+                        setServiceObjectId(existingId);
+                        setNeedsRegistration(false);
+                        return existingId;
                     }
                 }
+
+                setError(message);
+                return null;
+            } finally {
+                setIsRegistering(false);
             }
-            return null;
-        } catch (err) {
-            console.error('Error finding existing service:', err);
-            return null;
-        }
-    }, [suiClient]);
+        },
+        [currentAccount, signAndExecute, suiClient],
+    );
 
-    /**
-     * Register as a creator on-chain with user-provided name & description.
-     */
-    const register = useCallback(async (name: string, description: string): Promise<string | null> => {
-        if (!currentAccount) return null;
-
-        setIsRegistering(true);
-        setError(null);
-
-        try {
-            const tx = buildCreateProfile(name, description);
-
-            const result = await signAndExecute({
-                transaction: tx,
-            });
-
-            const txResult = await suiClient.waitForTransaction({
-                digest: result.digest,
-                options: { showObjectChanges: true },
-            });
-
-            const serviceObj = txResult.objectChanges?.find(
-                (change) =>
-                    change.type === 'created' &&
-                    change.objectType?.includes('::service::Service')
-            );
-
-            if (serviceObj && 'objectId' in serviceObj) {
-                const id = serviceObj.objectId;
-                setServiceObjectId(id);
-                setNeedsRegistration(false);
-                return id;
-            }
-
-            throw new Error('Service object not found in transaction result');
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Registration failed';
-            if (message.includes('ECreatorAlreadyExists') || message.includes('MoveAbort')) {
-                const existingId = await findExistingService(currentAccount.address);
-                if (existingId) {
-                    setServiceObjectId(existingId);
-                    setNeedsRegistration(false);
-                    return existingId;
-                }
-            }
-            setError(message);
-            return null;
-        } finally {
-            setIsRegistering(false);
-        }
-    }, [currentAccount, signAndExecute, suiClient, findExistingService]);
-
-    // Check on wallet connect — only detect, don't auto-create
+    // On wallet connect: detect existing profile (don't auto-create)
     useEffect(() => {
         if (!currentAccount?.address) {
             setServiceObjectId(null);
@@ -127,12 +89,12 @@ export function useAutoRegister() {
         if (checkedRef.current === currentAccount.address) return;
         checkedRef.current = currentAccount.address;
 
-        const checkExisting = async () => {
+        const check = async () => {
             setIsChecking(true);
             setError(null);
 
             try {
-                const existingId = await findExistingService(currentAccount.address);
+                const existingId = await findActiveServiceId(suiClient, currentAccount.address);
                 if (existingId) {
                     setServiceObjectId(existingId);
                     setNeedsRegistration(false);
@@ -140,15 +102,15 @@ export function useAutoRegister() {
                     setNeedsRegistration(true);
                 }
             } catch (err) {
-                console.error('Check error:', err);
+                console.error('[useAutoRegister] check error:', err);
                 setError(err instanceof Error ? err.message : 'Failed to check profile');
             } finally {
                 setIsChecking(false);
             }
         };
 
-        checkExisting();
-    }, [currentAccount?.address, findExistingService]);
+        check();
+    }, [currentAccount?.address, suiClient]);
 
     return {
         serviceObjectId,
