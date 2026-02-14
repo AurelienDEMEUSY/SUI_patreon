@@ -66,7 +66,7 @@ export default function CreatorProfilePage() {
             )}
 
             {/* Hero Header */}
-            <CreatorHeader creator={creator} />
+            <CreatorHeader creator={creator} serviceObjectId={serviceObjectId} />
 
             {/* Stats Row */}
             <div className="mb-8 mt-2">

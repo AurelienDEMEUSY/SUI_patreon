@@ -30,7 +30,7 @@ function parseServiceToCreator(
                 order: Number(tierFields.tier_level || index + 1),
                 tierLevel: Number(tierFields.tier_level || index + 1),
                 durationMs: Number(tierFields.duration_ms || 0),
-            } as Tier & { tierLevel: number; durationMs: number };
+            };
         }
     );
 

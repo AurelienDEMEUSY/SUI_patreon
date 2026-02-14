@@ -133,6 +133,7 @@ export interface BadgeProps {
 
 export interface CreatorHeaderProps {
     creator: Creator;
+    serviceObjectId?: string | null;
     className?: string;
 }
 

@@ -7,7 +7,7 @@ import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useState } from 'react';
 
 interface TierCardProps {
-    tier: Tier & { tierLevel?: number };
+    tier: Tier;
     serviceObjectId?: string | null;
     onSubscribe?: (tierId: string) => void;
 }
@@ -33,7 +33,7 @@ export function TierCard({ tier, serviceObjectId, onSubscribe }: TierCardProps) 
             return;
         }
 
-        const tierLevel = (tier as { tierLevel?: number }).tierLevel ?? tier.order;
+        const tierLevel = tier.tierLevel;
 
         console.log('[Subscribe]', { serviceObjectId, tierLevel, priceInMist: tier.priceInMist });
 
@@ -71,7 +71,7 @@ export function TierCard({ tier, serviceObjectId, onSubscribe }: TierCardProps) 
                             <span className="text-4xl font-black text-white">{format.mistToSui(tier.priceInMist)}</span>
                             <span className="text-sm font-bold text-[#3c3cf6] bg-[#3c3cf6]/10 px-2.5 py-0.5 rounded-full">SUI</span>
                         </div>
-                        <p className="text-gray-500 text-xs mt-1 font-medium">per month</p>
+                        <p className="text-gray-500 text-xs mt-1 font-medium">per {tier.durationMs ? format.duration(tier.durationMs) : 'month'}</p>
                     </div>
                     {isPopular && (
                         <div className="bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] text-white text-[10px] font-bold uppercase tracking-widest px-3.5 py-1.5 rounded-full shadow-[0_0_20px_-5px_rgba(60,60,246,0.5)]">
