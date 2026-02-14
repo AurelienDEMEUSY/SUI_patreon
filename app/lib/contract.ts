@@ -1,0 +1,237 @@
+import { Transaction } from "@mysten/sui/transactions";
+import { PACKAGE_ID, PLATFORM_ID, SERVICE_MODULE, SUBSCRIPTION_MODULE } from "./contract-constants";
+
+// ============================================================
+// Transaction Builders for the Patreon Contract
+// ============================================================
+
+/**
+ * Register as a creator on the platform.
+ * Creates a shared Service object whose ID becomes the Seal identity.
+ */
+export function buildCreateProfile(
+    name: string,
+    description: string
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::create_creator_profile`,
+        arguments: [
+            tx.object(PLATFORM_ID),
+            tx.pure.string(name),
+            tx.pure.string(description),
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Update creator profile details.
+ */
+export function buildUpdateProfile(
+    serviceObjectId: string,
+    name: string,
+    description: string
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::update_creator_profile`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.string(name),
+            tx.pure.string(description),
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Add a subscription tier to a creator's service.
+ */
+export function buildAddTier(
+    serviceObjectId: string,
+    tierLevel: number,
+    name: string,
+    priceInMist: number,
+    durationMs: number
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::add_subscription_tier`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.u64(tierLevel),
+            tx.pure.string(name),
+            tx.pure.u64(priceInMist),
+            tx.pure.u64(durationMs),
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Remove a subscription tier.
+ */
+export function buildRemoveTier(
+    serviceObjectId: string,
+    tierLevel: number
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::remove_subscription_tier`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.u64(tierLevel),
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Publish an encrypted post (content encrypted with Seal, stored on Walrus).
+ */
+export function buildPublishPost(
+    serviceObjectId: string,
+    title: string,
+    metadataBlobId: string,
+    dataBlobId: string,
+    requiredTier: number
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::publish_post`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.string(title),
+            tx.pure.string(metadataBlobId),
+            tx.pure.string(dataBlobId),
+            tx.pure.u64(requiredTier),
+            tx.object("0x6"), // Clock
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Update an existing post.
+ */
+export function buildUpdatePost(
+    serviceObjectId: string,
+    postId: string | number,
+    title: string,
+    metadataBlobId: string,
+    dataBlobId: string
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::update_post`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.u64(postId),
+            tx.pure.string(title),
+            tx.pure.string(metadataBlobId),
+            tx.pure.string(dataBlobId),
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Set post visibility (required tier).
+ */
+export function buildSetPostVisibility(
+    serviceObjectId: string,
+    postId: string | number,
+    requiredTier: number
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::set_post_visibility`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.u64(postId),
+            tx.pure.u64(requiredTier),
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Delete a post.
+ */
+export function buildDeletePost(
+    serviceObjectId: string,
+    postId: string | number
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::delete_post`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.pure.u64(postId),
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Subscribe to a creator by paying the tier price in SUI.
+ * Payment is split: creator (95%) + platform fee (5%).
+ */
+export function buildSubscribe(
+    serviceObjectId: string,
+    tierLevel: number,
+    paymentAmountMist: number
+): Transaction {
+    const tx = new Transaction();
+
+    // Split exact payment from gas coin
+    const [paymentCoin] = tx.splitCoins(tx.gas, [
+        tx.pure.u64(paymentAmountMist),
+    ]);
+
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SUBSCRIPTION_MODULE}::subscribe`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.object(PLATFORM_ID),
+            tx.pure.u64(tierLevel),
+            paymentCoin,
+            tx.object("0x6"), // Clock
+        ],
+    });
+
+    return tx;
+}
+
+/**
+ * Creator withdraws accumulated revenue.
+ */
+export function buildWithdrawRevenue(
+    serviceObjectId: string
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::withdraw_creator_funds`,
+        arguments: [tx.object(serviceObjectId)],
+    });
+    return tx;
+}
+
+/**
+ * Delete the creator's profile and unregister from the platform.
+ * Requires no active subscribers. Remaining revenue is returned.
+ */
+export function buildDeleteProfile(
+    serviceObjectId: string
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::delete_creator_profile`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.object(PLATFORM_ID),
+        ],
+    });
+    return tx;
+}

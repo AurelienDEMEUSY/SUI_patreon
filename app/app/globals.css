@@ -1,0 +1,326 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand Colors */
+  --color-primary: #3c3cf6;
+  --color-primary-dark: #2828d0;
+  --color-background: #000000;
+  --color-background-dark: #000000;
+  --color-foreground: #ffffff;
+  --color-accent-violet: #4c1d95;
+  --color-card-dark: #0a0a0a;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+
+  /* Orb Colors */
+  --orb-primary: #3c3cf6;
+  --orb-purple: #8b5cf6;
+  --orb-pink: #ec4899;
+}
+
+@theme inline {
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --color-primary: var(--color-primary);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--color-background);
+  color: #d1d5db;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================
+   Landing Page Glows
+   ======================================== */
+
+.glow-indigo {
+  background: radial-gradient(circle at center, rgba(60, 60, 246, 0.15) 0%, transparent 70%);
+}
+
+.glow-violet {
+  background: radial-gradient(circle at center, rgba(76, 29, 149, 0.2) 0%, transparent 70%);
+}
+
+/* ========================================
+   Glass Navigation
+   ======================================== */
+
+.glass-nav {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ========================================
+   Hero Gradient Text
+   ======================================== */
+
+.hero-gradient-text {
+  background: linear-gradient(to bottom right, #ffffff 50%, #3c3cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ========================================
+   Glassmorphism Utilities
+   ======================================== */
+
+/* ========================================
+   Glassmorphism Utilities
+   ======================================== */
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-radius: 1rem;
+  /* Added based on context, user code implies rounded-2xl in HTML but CSS implies border-radius */
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.3s ease;
+  border-radius: 1rem;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* ========================================
+   Background Orbs
+   ======================================== */
+
+.bg-orb {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: -1;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.orb-1 {
+  top: -200px;
+  left: -200px;
+  background: #3c3cf6;
+}
+
+.orb-2 {
+  bottom: -200px;
+  right: -200px;
+  background: #7c3aed;
+}
+
+.orb-3 {
+  top: 40%;
+  left: 60%;
+  background: #3c3cf6;
+  width: 400px;
+  height: 400px;
+  opacity: 0.1;
+}
+
+/* ========================================
+   Text Effects
+   ======================================== */
+
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, var(--color-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-alt {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--orb-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ========================================
+   Effects & Interactions
+   ======================================== */
+
+.glow-primary {
+  box-shadow: 0 0 20px var(--color-primary);
+}
+
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(60, 60, 246, 0.3);
+}
+
+/* ========================================
+   Scrollbar Styling
+   ======================================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================
+   Selection Styling
+   ======================================== */
+
+::selection {
+  background-color: rgba(60, 60, 246, 0.3);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: rgba(60, 60, 246, 0.3);
+  color: #ffffff;
+}
+
+/* ========================================
+   Gradient Utilities
+   ======================================== */
+
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+/* ========================================
+   Profile Page — Glow & Animation Utilities
+   ======================================== */
+
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px 2px rgba(60, 60, 246, 0.4), 0 0 40px 4px rgba(60, 60, 246, 0.15);
+  }
+
+  50% {
+    box-shadow: 0 0 30px 6px rgba(60, 60, 246, 0.6), 0 0 60px 8px rgba(60, 60, 246, 0.25);
+  }
+}
+
+@keyframes float-subtle {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.profile-glow-ring {
+  animation: glow-pulse 3s ease-in-out infinite;
+  border: 3px solid rgba(60, 60, 246, 0.7);
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(60, 60, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+.tab-glow {
+  box-shadow: 0 0 25px -5px rgba(60, 60, 246, 0.7), 0 4px 15px -3px rgba(60, 60, 246, 0.3);
+}
+
+.content-card-premium {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.content-card-premium:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(60, 60, 246, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px -15px rgba(60, 60, 246, 0.15);
+}
+
+.tier-gradient-border {
+  position: relative;
+  background: linear-gradient(135deg, rgba(60, 60, 246, 0.15), rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.05));
+  padding: 1px;
+  border-radius: 1.5rem;
+  transition: all 0.4s ease;
+}
+
+.tier-gradient-border:hover {
+  background: linear-gradient(135deg, rgba(60, 60, 246, 0.4), rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.2));
+}
+
+.tier-gradient-border>.tier-inner {
+  background: rgba(10, 10, 10, 0.95);
+  border-radius: calc(1.5rem - 1px);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

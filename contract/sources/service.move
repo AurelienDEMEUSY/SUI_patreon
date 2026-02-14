@@ -30,6 +30,7 @@ const EInvalidPrice: u64 = 9;
 const EInvalidDuration: u64 = 10;
 const EPostNotFound: u64 = 11;
 const ETierInUse: u64 = 12;
+const EHasSubscribers: u64 = 13;
 
 // ============================================================
 // Events
@@ -59,6 +60,10 @@ public struct PostUpdated has copy, drop {
 public struct PostDeleted has copy, drop {
     creator: address,
     post_id: u64,
+}
+
+public struct CreatorDeleted has copy, drop {
+    creator: address,
 }
 
 // ============================================================
@@ -118,6 +123,50 @@ entry fun create_creator_profile(
     event::emit(CreatorRegistered { creator: sender, name });
 
     transfer::share_object(service);
+}
+
+/// Delete the creator's profile and remove from platform registry.
+/// Requires no active subscribers (table must be empty).
+/// Any remaining revenue is transferred back to the creator.
+entry fun delete_creator_profile(
+    service: Service,
+    platform: &mut Platform,
+    ctx: &mut TxContext,
+) {
+    let sender = ctx.sender();
+    assert!(service.creator == sender, ENotCreator);
+
+    let Service {
+        id,
+        creator,
+        name: _,
+        description: _,
+        tiers: _,
+        posts: _,
+        next_post_id: _,
+        subscribers,
+        revenue,
+    } = service;
+
+    // Require no active subscribers (Table must be empty to destroy)
+    assert!(table::is_empty(&subscribers), EHasSubscribers);
+    table::destroy_empty(subscribers);
+
+    // Transfer remaining revenue back to creator
+    if (balance::value(&revenue) > 0) {
+        let revenue_coin = coin::from_balance(revenue, ctx);
+        transfer::public_transfer(revenue_coin, sender);
+    } else {
+        balance::destroy_zero(revenue);
+    };
+
+    // Unregister from platform
+    platform::unregister_creator(platform, creator);
+
+    // Destroy the object
+    object::delete(id);
+
+    event::emit(CreatorDeleted { creator });
 }
 
 /// Update creator profile details.
