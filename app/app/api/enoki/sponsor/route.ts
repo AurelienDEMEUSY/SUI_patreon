@@ -102,7 +102,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ bytes: result.bytes, digest: result.digest });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Sponsor failed";
-    console.error("[sponsor] Fetch error:", message);
-    return NextResponse.json({ error: message }, { status: 502 });
+    const cause = err instanceof Error && "cause" in err ? String(err.cause) : null;
+    console.error("[sponsor] Fetch error:", message, cause ? { cause } : "");
+    return NextResponse.json(
+      {
+        error: message,
+        hint: "Cannot reach Enoki API. Check: 1) Internet / firewall, 2) curl https://api.enoki.mystenlabs.com, 3) ENOKI_PRIVATE_API_KEY in .env",
+      },
+      { status: 502 }
+    );
   }
 }
