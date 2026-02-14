@@ -52,7 +52,7 @@ export default function Home() {
 
           {/* Stats Visual */}
           <FadeIn delay={0.4} className="mt-24 w-full relative aspect-[21/9] rounded-3xl overflow-hidden border border-white/5 group">
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
             <div
               className="absolute inset-0 bg-center bg-cover scale-105 group-hover:scale-100 transition-transform duration-1000"
               style={{
@@ -63,20 +63,20 @@ export default function Home() {
             <div className="absolute inset-0 flex items-center justify-center z-20">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-20 p-8 w-full max-w-5xl">
                 <div className="flex flex-col items-center">
-                  <span className="text-white text-4xl font-bold mb-1">100%</span>
-                  <span className="text-[#3c3cf6] text-xs font-bold tracking-widest uppercase">Decentralized</span>
+                  <span className="text-white text-4xl font-bold mb-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">100%</span>
+                  <span className="text-white text-xs font-bold tracking-widest uppercase drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">Decentralized</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <span className="text-white text-4xl font-bold mb-1">0 Gas</span>
-                  <span className="text-[#3c3cf6] text-xs font-bold tracking-widest uppercase">Sponsored Txs</span>
+                  <span className="text-white text-4xl font-bold mb-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0 Gas</span>
+                  <span className="text-white text-xs font-bold tracking-widest uppercase drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">Sponsored Txs</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <span className="text-white text-4xl font-bold mb-1">Walrus</span>
-                  <span className="text-[#3c3cf6] text-xs font-bold tracking-widest uppercase">Storage</span>
+                  <span className="text-white text-4xl font-bold mb-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Walrus</span>
+                  <span className="text-white text-xs font-bold tracking-widest uppercase drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">Storage</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <span className="text-white text-4xl font-bold mb-1">Seal</span>
-                  <span className="text-[#3c3cf6] text-xs font-bold tracking-widest uppercase">Encryption</span>
+                  <span className="text-white text-4xl font-bold mb-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Seal</span>
+                  <span className="text-white text-xs font-bold tracking-widest uppercase drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">Encryption</span>
                 </div>
               </div>
             </div>
