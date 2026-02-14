@@ -70,7 +70,7 @@ export default function SettingsPage() {
 
                 {/* Danger Zone — only shown if the user has a creator profile */}
                 {serviceObjectId && (
-                    <div className="rounded-2xl border border-red-500/20 bg-red-500/3 p-6">
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <span className="material-symbols-outlined text-red-400 text-xl">warning</span>
                             <h2 className="text-xl font-bold text-red-400">Danger Zone</h2>
