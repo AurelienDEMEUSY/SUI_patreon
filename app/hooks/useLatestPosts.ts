@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { PACKAGE_ID } from '@/lib/contract-constants';
 import { findActiveServiceId } from '@/lib/service-lookup';
+import { parseOnChainPost } from '@/lib/post-service';
+import type { OnChainPost } from '@/types/post.types';
 
 export interface LatestPostItem {
     creatorAddress: string;
@@ -12,7 +14,8 @@ export interface LatestPostItem {
     postId: number;
     title: string;
     createdAtMs: number;
-    metadataBlobId: string;
+    /** Post complet on-chain pour usePostContent / décryptage des images */
+    onChainPost: OnChainPost;
 }
 
 type PostPublishedEvent = { creator?: string; post_id?: string };
@@ -22,10 +25,10 @@ const DEFAULT_LIMIT = 12;
 
 /**
  * Fetches the N most recently published posts across all creators.
- * Queries PostPublished events, sorts by timestamp, then loads each Service
- * to get post title, creator name, and metadata blob id.
+ * - publicOnly: true → uniquement requiredTier === 0 (ex. grille Discover).
+ * - publicOnly: false → tous les posts (ex. search dropdown, filtre accès côté UI).
  */
-export function useLatestPosts(limit: number = DEFAULT_LIMIT) {
+export function useLatestPosts(limit: number = DEFAULT_LIMIT, publicOnly: boolean = true) {
     const [posts, setPosts] = useState<LatestPostItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -90,10 +93,8 @@ export function useLatestPosts(limit: number = DEFAULT_LIMIT) {
                     const postEntry = postsList.find((p: any) => Number(p.post_id ?? p.fields?.post_id) === postId);
                     if (!postEntry) continue;
 
-                    const p = postEntry.fields ?? postEntry;
-                    const title = typeof p.title === 'string' ? p.title : '';
-                    const createdAtMs = Number(p.created_at_ms ?? 0);
-                    const metadataBlobId = typeof p.metadata_blob_id === 'string' ? p.metadata_blob_id : '';
+                    const onChainPost = parseOnChainPost(postEntry);
+                    if (publicOnly && onChainPost.requiredTier !== 0) continue;
                     const creatorName = typeof fields.name === 'string' ? fields.name : 'Creator';
 
                     results.push({
@@ -101,9 +102,9 @@ export function useLatestPosts(limit: number = DEFAULT_LIMIT) {
                         creatorName,
                         serviceObjectId,
                         postId,
-                        title,
-                        createdAtMs,
-                        metadataBlobId,
+                        title: onChainPost.title,
+                        createdAtMs: onChainPost.createdAtMs,
+                        onChainPost,
                     });
                 }
 
@@ -121,7 +122,7 @@ export function useLatestPosts(limit: number = DEFAULT_LIMIT) {
 
         fetchLatest();
         return () => { cancelled = true; };
-    }, [suiClient, limit]);
+    }, [suiClient, limit, publicOnly]);
 
     return { posts, isLoading, error };
 }

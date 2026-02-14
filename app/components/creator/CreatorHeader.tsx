@@ -3,9 +3,13 @@
 import { Creator, Tier } from '@/types';
 import { useSubscribe } from '@/hooks/useSubscribe';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useCreatorBlobUrl } from '@/hooks/useCreatorBlobUrl';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { format } from '@/lib/format';
 import { useState, useRef, useEffect } from 'react';
+
+const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2670&auto=format&fit=crop';
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1000&auto=format&fit=crop';
 
 interface CreatorHeaderProps {
     creator: Creator;
@@ -23,6 +27,9 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
     const [subscribeSuccess, setSubscribeSuccess] = useState(false);
     const [showTierMenu, setShowTierMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    const { url: bannerUrl, isLoading: bannerLoading } = useCreatorBlobUrl(creator.bannerBlobId, serviceObjectId ?? undefined);
+    const { url: avatarUrl, isLoading: avatarLoading } = useCreatorBlobUrl(creator.avatarBlobId, serviceObjectId ?? undefined);
 
     const sortedTiers = [...creator.tiers].sort((a, b) => a.tierLevel - b.tierLevel);
     const hasTiers = sortedTiers.length > 0;
@@ -68,28 +75,36 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
     };
     return (
         <div className="relative mb-6">
-            {/* Banner — Cinematic */}
+            {/* Banner — Cinematic (téléchargé/décrypté depuis Walrus comme les images de post) */}
             <div className="w-full h-56 md:h-72 lg:h-80 relative overflow-hidden rounded-3xl">
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
                 <div className="absolute inset-0 bg-gradient-to-r from-[#3c3cf6]/20 via-transparent to-purple-600/15 z-10" />
-                <img
-                    src={creator.bannerBlobId || "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2670&auto=format&fit=crop"}
-                    alt={`${creator.name} banner`}
-                    className="w-full h-full object-cover"
-                />
+                {bannerLoading ? (
+                    <div className="absolute inset-0 bg-white/[0.04] animate-pulse" />
+                ) : (
+                    <img
+                        src={bannerUrl || DEFAULT_BANNER}
+                        alt={`${creator.name} banner`}
+                        className="w-full h-full object-cover"
+                    />
+                )}
             </div>
 
             {/* Profile Section — Overlapping Banner */}
             <div className="relative -mt-24 px-6 md:px-10 z-20">
                 <div className="flex flex-col md:flex-row md:items-end gap-5">
-                    {/* Avatar with Glow Ring */}
+                    {/* Avatar with Glow Ring (téléchargé/décrypté depuis Walrus comme les images de post) */}
                     <div className="shrink-0">
                         <div className="w-32 h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden profile-glow-ring bg-black">
-                            <img
-                                src={creator.avatarBlobId || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1000&auto=format&fit=crop"}
-                                alt={creator.name}
-                                className="w-full h-full object-cover"
-                            />
+                            {avatarLoading ? (
+                                <div className="w-full h-full bg-white/[0.06] animate-pulse" />
+                            ) : (
+                                <img
+                                    src={avatarUrl || DEFAULT_AVATAR}
+                                    alt={creator.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            )}
                         </div>
                     </div>
 

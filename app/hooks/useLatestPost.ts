@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { PACKAGE_ID } from '@/lib/contract-constants';
 import { findActiveServiceId } from '@/lib/service-lookup';
+import { parseOnChainPost } from '@/lib/post-service';
+import type { OnChainPost } from '@/types/post.types';
 
 export interface LatestPost {
     creatorAddress: string;
@@ -12,15 +14,17 @@ export interface LatestPost {
     postId: number;
     title: string;
     createdAtMs: number;
+    /** Post complet on-chain (metadataBlobId, dataBlobId, requiredTier) pour usePostContent / décryptage */
+    onChainPost: OnChainPost;
 }
 
 type PostPublishedEvent = { creator?: string; post_id?: string };
 type SuiEvent = { id: { txDigest: string }; parsedJson: unknown; timestampMs?: number };
 
 /**
- * Fetches the most recently published post across all creators.
- * Queries PostPublished events, sorts by timestamp, then loads the Service
- * to get the post title and creator name.
+ * Fetches the most recently published **public** post (requiredTier === 0) across all creators.
+ * Queries PostPublished events, sorts by timestamp, then finds the first public post
+ * so the banner can display its content without restriction.
  */
 export function useLatestPost() {
     const [post, setPost] = useState<LatestPost | null>(null);
@@ -53,59 +57,52 @@ export function useLatestPost() {
                     return tsB - tsA;
                 });
 
-                const latest = sorted[0] as SuiEvent;
-                const parsed = latest.parsedJson as PostPublishedEvent;
-                const creatorAddress = parsed?.creator;
-                const postId = parsed?.post_id != null ? Number(parsed.post_id) : NaN;
+                // Take the first post that is public (requiredTier === 0)
+                for (const ev of sorted) {
+                    if (cancelled) return;
+                    const parsed = (ev as SuiEvent).parsedJson as PostPublishedEvent;
+                    const creatorAddress = parsed?.creator;
+                    const postId = parsed?.post_id != null ? Number(parsed.post_id) : NaN;
 
-                if (!creatorAddress || Number.isNaN(postId)) {
-                    setPost(null);
-                    return;
-                }
+                    if (!creatorAddress || Number.isNaN(postId)) continue;
 
-                const serviceObjectId = await findActiveServiceId(suiClient, creatorAddress);
-                if (cancelled || !serviceObjectId) {
-                    if (!cancelled) setPost(null);
-                    return;
-                }
+                    const serviceObjectId = await findActiveServiceId(suiClient, creatorAddress);
+                    if (cancelled || !serviceObjectId) continue;
 
-                const serviceObject = await suiClient.getObject({
-                    id: serviceObjectId,
-                    options: { showContent: true },
-                });
-
-                if (cancelled) return;
-
-                if (serviceObject.data?.content?.dataType !== 'moveObject') {
-                    setPost(null);
-                    return;
-                }
-
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const fields = (serviceObject.data.content as any).fields;
-                const posts = fields.posts ?? [];
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const postEntry = posts.find((p: any) => Number(p.post_id ?? p.fields?.post_id) === postId);
-                if (!postEntry) {
-                    setPost(null);
-                    return;
-                }
-
-                const p = postEntry.fields ?? postEntry;
-                const title = typeof p.title === 'string' ? p.title : '';
-                const createdAtMs = Number(p.created_at_ms ?? 0);
-                const creatorName = typeof fields.name === 'string' ? fields.name : 'Creator';
-
-                if (!cancelled) {
-                    setPost({
-                        creatorAddress,
-                        creatorName,
-                        serviceObjectId,
-                        postId,
-                        title,
-                        createdAtMs,
+                    const serviceObject = await suiClient.getObject({
+                        id: serviceObjectId,
+                        options: { showContent: true },
                     });
+
+                    if (cancelled) return;
+                    if (serviceObject.data?.content?.dataType !== 'moveObject') continue;
+
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const fields = (serviceObject.data.content as any).fields;
+                    const posts = fields.posts ?? [];
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const postEntry = posts.find((p: any) => Number(p.post_id ?? p.fields?.post_id) === postId);
+                    if (!postEntry) continue;
+
+                    const onChainPost = parseOnChainPost(postEntry);
+                    if (onChainPost.requiredTier !== 0) continue; // skip restricted, keep only public
+
+                    const creatorName = typeof fields.name === 'string' ? fields.name : 'Creator';
+                    if (!cancelled) {
+                        setPost({
+                            creatorAddress,
+                            creatorName,
+                            serviceObjectId,
+                            postId,
+                            title: onChainPost.title,
+                            createdAtMs: onChainPost.createdAtMs,
+                            onChainPost,
+                        });
+                    }
+                    return; // found first public post
                 }
+
+                if (!cancelled) setPost(null);
             } catch (err) {
                 if (!cancelled) {
                     console.error('[useLatestPost] fetch error:', err);
