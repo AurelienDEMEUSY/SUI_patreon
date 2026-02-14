@@ -9,9 +9,12 @@ import { useState, useRef, useEffect } from 'react';
 interface CreatorHeaderProps {
     creator: Creator;
     serviceObjectId?: string | null;
+    isOwnProfile?: boolean;
+    onAddTier?: () => void;
+    onCreatePost?: () => void;
 }
 
-export function CreatorHeader({ creator, serviceObjectId }: CreatorHeaderProps) {
+export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTier, onCreatePost }: CreatorHeaderProps) {
     const currentAccount = useCurrentAccount();
     const { subscribe, isLoading: isSubscribing } = useSubscribe();
     const [subscribeError, setSubscribeError] = useState<string | null>(null);
@@ -116,7 +119,28 @@ export function CreatorHeader({ creator, serviceObjectId }: CreatorHeaderProps) 
 
                         {/* Actions */}
                         <div className="flex flex-col gap-2 shrink-0">
-                            <div className="relative" ref={menuRef}>
+                            {isOwnProfile ? (
+                                /* ── Owner actions ── */
+                                <div className="flex gap-2.5">
+                                    <button
+                                        onClick={onCreatePost}
+                                        className="h-11 px-6 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] hover:from-[#4f4ff8] hover:to-[#7c7ff9] text-white font-bold rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(60,60,246,0.5)] hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.7)] active:scale-95 flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">edit_note</span>
+                                        Create Post
+                                    </button>
+                                    <button
+                                        onClick={onAddTier}
+                                        className="h-11 px-5 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 text-sm active:scale-95"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">add_circle</span>
+                                        Add Tier
+                                    </button>
+                                </div>
+                            ) : (
+                                /* ── Visitor actions (subscribe dropdown) ── */
+                                <>
+                                    <div className="relative" ref={menuRef}>
                                 {hasTiers ? (
                                     <>
                                         <button
@@ -183,6 +207,8 @@ export function CreatorHeader({ creator, serviceObjectId }: CreatorHeaderProps) 
                                     <span className="material-symbols-outlined text-sm">error</span>
                                     {subscribeError}
                                 </div>
+                            )}
+                                </>
                             )}
                         </div>
                     </div>

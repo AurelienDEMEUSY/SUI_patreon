@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useCreator } from '@/hooks/useCreator';
 import { useAutoRegister } from '@/hooks/useAutoRegister';
 import { CreatorHeader } from '@/components/creator/CreatorHeader';
@@ -9,13 +10,19 @@ import { CreatorStats } from '@/components/creator/CreatorStats';
 import { ProfileTabs } from '@/components/creator/ProfileTabs';
 import { ContentFeed } from '@/components/content/ContentFeed';
 import { TierCard } from '@/components/tier/TierCard';
+import { AddTierForm } from '@/components/tier/AddTierForm';
 
 export default function CreatorProfilePage() {
     const params = useParams();
+    const router = useRouter();
     const address = params.address as string;
+    const currentAccount = useCurrentAccount();
     const { creator, serviceObjectId, isLoading, error } = useCreator(address);
     const { isRegistering, isChecking } = useAutoRegister();
     const [activeTab, setActiveTab] = useState('posts');
+    const [showAddTier, setShowAddTier] = useState(false);
+
+    const isOwnProfile = !!(currentAccount?.address && creator?.address && currentAccount.address === creator.address);
 
     if (isLoading || isChecking) {
         return (
@@ -66,7 +73,13 @@ export default function CreatorProfilePage() {
             )}
 
             {/* Hero Header */}
-            <CreatorHeader creator={creator} serviceObjectId={serviceObjectId} />
+            <CreatorHeader
+                creator={creator}
+                serviceObjectId={serviceObjectId}
+                isOwnProfile={isOwnProfile}
+                onAddTier={() => setShowAddTier(true)}
+                onCreatePost={() => {/* TODO: create post flow */}}
+            />
 
             {/* Stats Row */}
             <div className="mb-8 mt-2">
@@ -113,6 +126,17 @@ export default function CreatorProfilePage() {
 
                         {activeTab === 'membership' && (
                             <div className="grid grid-cols-1 gap-5">
+                                {/* Owner: Add Tier button */}
+                                {isOwnProfile && serviceObjectId && (
+                                    <button
+                                        onClick={() => setShowAddTier(true)}
+                                        className="w-full py-4 rounded-2xl border-2 border-dashed border-white/[0.08] hover:border-[#3c3cf6]/40 bg-white/[0.02] hover:bg-[#3c3cf6]/5 transition-all flex items-center justify-center gap-2 text-sm font-bold text-gray-400 hover:text-[#3c3cf6] group"
+                                    >
+                                        <span className="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">add_circle</span>
+                                        Add a new tier
+                                    </button>
+                                )}
+
                                 {creator.tiers.length > 0 ? (
                                     creator.tiers.map((tier) => (
                                         <TierCard
@@ -127,7 +151,20 @@ export default function CreatorProfilePage() {
                                             <span className="material-symbols-outlined text-3xl text-gray-600">workspace_premium</span>
                                         </div>
                                         <h3 className="text-lg font-bold text-white mb-1.5">No membership tiers</h3>
-                                        <p className="text-gray-500 text-sm max-w-xs">This creator hasn&apos;t set up any subscription tiers yet.</p>
+                                        <p className="text-gray-500 text-sm max-w-xs">
+                                            {isOwnProfile
+                                                ? 'Create your first tier so supporters can subscribe!'
+                                                : "This creator hasn\u0027t set up any subscription tiers yet."}
+                                        </p>
+                                        {isOwnProfile && serviceObjectId && (
+                                            <button
+                                                onClick={() => setShowAddTier(true)}
+                                                className="mt-6 h-11 px-7 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] text-white font-bold rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(60,60,246,0.4)] hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.6)] active:scale-95 flex items-center justify-center gap-2 text-sm"
+                                            >
+                                                <span className="material-symbols-outlined text-lg">add_circle</span>
+                                                Create First Tier
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -197,6 +234,21 @@ export default function CreatorProfilePage() {
                     </div>
                 </div>
             </div>
+
+            {/* Add Tier Modal */}
+            {showAddTier && serviceObjectId && (
+                <AddTierForm
+                    serviceObjectId={serviceObjectId}
+                    existingTierLevels={creator.tiers.map((t) => t.tierLevel)}
+                    onSuccess={() => {
+                        setShowAddTier(false);
+                        // Reload page to fetch updated tiers from on-chain
+                        router.refresh();
+                        window.location.reload();
+                    }}
+                    onClose={() => setShowAddTier(false)}
+                />
+            )}
         </div>
     );
 }
