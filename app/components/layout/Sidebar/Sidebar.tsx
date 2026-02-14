@@ -116,7 +116,7 @@ export function Sidebar({ className = '', isCreator = false, onBecomeCreator }: 
               <p className="text-xs text-white/40 font-mono break-all">{account.address}</p>
             </div>
             <DropdownSeparator />
-            <DropdownItem onClick={() => router.push(`/creator/${account.address}`)}>
+            <DropdownItem onClick={() => router.push('/app/creator-hub')}>
               <User size={20} />
               Profile
             </DropdownItem>

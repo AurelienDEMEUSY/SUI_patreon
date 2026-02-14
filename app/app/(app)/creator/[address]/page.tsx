@@ -63,8 +63,14 @@ export default function CreatorProfilePage() {
                 <div className="w-20 h-20 rounded-2xl bg-white/[0.04] flex items-center justify-center mb-5">
                     <span className="material-symbols-outlined text-4xl text-gray-600">person_off</span>
                 </div>
-                <h1 className="text-xl font-bold text-white mb-2">{error || 'Creator not found'}</h1>
-                <p className="text-gray-500 max-w-sm">The creator you are looking for does not exist or an error occurred.</p>
+                <h1 className="text-xl font-bold text-white mb-2">{error || 'Creator account does not exist'}</h1>
+                <p className="text-gray-500 max-w-sm mb-6">This address does not have a creator profile on-chain.</p>
+                <button
+                    onClick={() => router.push('/app')}
+                    className="px-6 py-3 bg-[#3c3cf6] hover:bg-[#3c3cf6]/90 text-white font-bold rounded-xl transition-all text-sm"
+                >
+                    Discover Creators
+                </button>
             </div>
         );
     }
