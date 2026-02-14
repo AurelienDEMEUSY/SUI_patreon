@@ -44,6 +44,8 @@ function RegisterEnokiWallets({ children }: { children: React.ReactNode }) {
       providers: {
         google: {
           clientId: googleClientId,
+          // Fix: always redirect to the app root after OAuth, not the current page
+          redirectUrl: window.location.origin,
         },
       },
       client,

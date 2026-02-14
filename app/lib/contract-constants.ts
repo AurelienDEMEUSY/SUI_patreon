@@ -29,6 +29,38 @@ export const SERVICE_MODULE = "service";
 export const SUBSCRIPTION_MODULE = "subscription";
 
 // ============================================================
+// Enoki Sponsored Transactions — Allowed Targets & Addresses
+// ============================================================
+
+/**
+ * All Move call targets the app can sponsor.
+ * Passed inline to createSponsoredTransaction (sender variant).
+ */
+export const ALLOWED_MOVE_CALL_TARGETS: string[] = [
+    `${PACKAGE_ID}::${SERVICE_MODULE}::create_creator_profile`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::update_creator_profile`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::add_subscription_tier`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::remove_subscription_tier`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::publish_post`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::update_post`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::set_post_visibility`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::delete_post`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::withdraw_creator_funds`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::delete_creator_profile`,
+    `${PACKAGE_ID}::${SERVICE_MODULE}::seal_approve`,
+    `${PACKAGE_ID}::${SUBSCRIPTION_MODULE}::subscribe`,
+];
+
+/**
+ * Shared object addresses referenced by transactions (Platform, Clock).
+ * The sender address is added dynamically at call time.
+ */
+export const ALLOWED_ADDRESSES: string[] = [
+    PLATFORM_ID,
+    "0x6", // Sui Clock
+];
+
+// ============================================================
 // Seal Key Servers (Testnet)
 // ============================================================
 

@@ -148,7 +148,7 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
                                     </button>
                                     <button
                                         onClick={onAddTier}
-                                        className="h-11 px-5 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 text-sm active:scale-95"
+                                        className="h-11 px-5 bg-white/[0.05] hover:bg-white/[0.10] text-white font-semibold rounded-xl border border-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 text-sm active:scale-95"
                                     >
                                         <span className="material-symbols-outlined text-lg">add_circle</span>
                                         Add Tier
@@ -158,73 +158,73 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
                                 /* ── Visitor actions ── */
                                 <>
                                     <div className="relative" ref={menuRef}>
-                                {hasTiers ? (
-                                    <>
-                                        <button
-                                            onClick={() => setShowTierMenu((v) => !v)}
-                                            disabled={isSubscribing}
-                                            className="h-11 px-7 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] hover:from-[#4f4ff8] hover:to-[#7c7ff9] text-white font-bold rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(60,60,246,0.5)] hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.7)] active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                                        >
-                                            {isSubscribing ? (
-                                                <>
-                                                    <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span>
-                                                    Processing…
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>loyalty</span>
-                                                    Subscribe
-                                                    <span className="material-symbols-outlined text-base">expand_more</span>
-                                                </>
-                                            )}
-                                        </button>
+                                        {hasTiers ? (
+                                            <>
+                                                <button
+                                                    onClick={() => setShowTierMenu((v) => !v)}
+                                                    disabled={isSubscribing}
+                                                    className="h-11 px-7 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] hover:from-[#4f4ff8] hover:to-[#7c7ff9] text-white font-bold rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(60,60,246,0.5)] hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.7)] active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                                >
+                                                    {isSubscribing ? (
+                                                        <>
+                                                            <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+                                                            Processing…
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>loyalty</span>
+                                                            Subscribe
+                                                            <span className="material-symbols-outlined text-base">expand_more</span>
+                                                        </>
+                                                    )}
+                                                </button>
 
-                                        {/* Tier dropdown */}
-                                        {showTierMenu && (
-                                            <div className="absolute right-0 mt-2 w-72 rounded-xl bg-[#141428] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden z-50">
-                                                <div className="px-4 py-3 border-b border-white/[0.06]">
-                                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">Choose a tier</p>
-                                                </div>
-                                                {sortedTiers.map((tier) => (
-                                                    <button
-                                                        key={tier.id}
-                                                        onClick={() => handleSubscribe(tier)}
-                                                        className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors text-left group/tier"
-                                                    >
-                                                        <div className="min-w-0">
-                                                            <p className="text-sm font-bold text-white truncate group-hover/tier:text-[#3c3cf6] transition-colors">{tier.name}</p>
-                                                            <p className="text-[11px] text-gray-500">
-                                                                {tier.durationMs ? `per ${format.duration(tier.durationMs)}` : 'per month'}
-                                                            </p>
+                                                {/* Tier dropdown */}
+                                                {showTierMenu && (
+                                                    <div className="absolute right-0 mt-2 w-72 rounded-xl bg-[#141428] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden z-50">
+                                                        <div className="px-4 py-3 border-b border-white/[0.06]">
+                                                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">Choose a tier</p>
                                                         </div>
-                                                        <span className="text-sm font-black text-white shrink-0">
-                                                            {format.mistToSui(tier.priceInMist)} <span className="text-[#3c3cf6] text-xs font-bold">SUI</span>
-                                                        </span>
-                                                    </button>
-                                                ))}
-                                            </div>
+                                                        {sortedTiers.map((tier) => (
+                                                            <button
+                                                                key={tier.id}
+                                                                onClick={() => handleSubscribe(tier)}
+                                                                className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors text-left group/tier"
+                                                            >
+                                                                <div className="min-w-0">
+                                                                    <p className="text-sm font-bold text-white truncate group-hover/tier:text-[#3c3cf6] transition-colors">{tier.name}</p>
+                                                                    <p className="text-[11px] text-gray-500">
+                                                                        {tier.durationMs ? `per ${format.duration(tier.durationMs)}` : 'per month'}
+                                                                    </p>
+                                                                </div>
+                                                                <span className="text-sm font-black text-white shrink-0">
+                                                                    {format.mistToSui(tier.priceInMist)} <span className="text-[#3c3cf6] text-xs font-bold">SUI</span>
+                                                                </span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <span className="h-11 px-7 bg-white/[0.05] text-gray-500 font-bold rounded-xl border border-white/10 flex items-center justify-center gap-2 text-sm cursor-default">
+                                                <span className="material-symbols-outlined text-lg">loyalty</span>
+                                                No tiers available
+                                            </span>
                                         )}
-                                    </>
-                                ) : (
-                                    <span className="h-11 px-7 bg-white/5 text-gray-500 font-bold rounded-xl border border-white/10 flex items-center justify-center gap-2 text-sm cursor-default">
-                                        <span className="material-symbols-outlined text-lg">loyalty</span>
-                                        No tiers available
-                                    </span>
-                                )}
-                            </div>
+                                    </div>
 
-                            {subscribeSuccess && (
-                                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold bg-emerald-400/10 px-3 py-2 rounded-lg">
-                                    <span className="material-symbols-outlined text-sm">check_circle</span>
-                                    Subscribed successfully!
-                                </div>
-                            )}
-                            {subscribeError && (
-                                <div className="flex items-center gap-2 text-red-400 text-xs font-bold bg-red-400/10 px-3 py-2 rounded-lg">
-                                    <span className="material-symbols-outlined text-sm">error</span>
-                                    {subscribeError}
-                                </div>
-                            )}
+                                    {subscribeSuccess && (
+                                        <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold bg-emerald-400/10 px-3 py-2 rounded-lg">
+                                            <span className="material-symbols-outlined text-sm">check_circle</span>
+                                            Subscribed successfully!
+                                        </div>
+                                    )}
+                                    {subscribeError && (
+                                        <div className="flex items-center gap-2 text-red-400 text-xs font-bold bg-red-400/10 px-3 py-2 rounded-lg">
+                                            <span className="material-symbols-outlined text-sm">error</span>
+                                            {subscribeError}
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>
