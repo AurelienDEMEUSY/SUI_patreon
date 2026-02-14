@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { useAllCreators } from '@/hooks/useAllCreators';
 import { format } from '@/lib/format';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 export default function AppPage() {
   const { creators, isLoading, error } = useAllCreators();
 
   return (
-    <>
+    <PageContainer>
       <section className="relative w-full aspect-[21/9] min-h-[300px] rounded-3xl overflow-hidden glass-panel group">
         <div className="absolute inset-0 bg-gradient-to-br from-[#3c3cf6]/30 via-[#0a0a18] to-purple-900/20"></div>
         <div className="relative h-full flex flex-col justify-center p-8 lg:p-12 max-w-2xl">
@@ -139,8 +140,6 @@ export default function AppPage() {
           </div>
         </div>
       </section>
-
-      <div className="h-8"></div>
-    </>
+    </PageContainer>
   );
 }

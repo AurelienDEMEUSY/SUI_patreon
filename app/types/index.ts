@@ -154,6 +154,7 @@ export interface CreatorHeaderProps {
     className?: string;
 }
 
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 export type CardVariant = 'glass' | 'solid' | 'bordered';
 export type BlurAmount = 'sm' | 'md' | 'lg';

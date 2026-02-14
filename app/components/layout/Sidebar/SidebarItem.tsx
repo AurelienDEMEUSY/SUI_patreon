@@ -1,12 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import * as LucideIcons from 'lucide-react';
 import type { SidebarItemProps } from '@/types';
 import { cn } from '@/lib';
 import { useUiStore } from '@/stores';
 
 export function SidebarItem({ item, isActive, onClick }: SidebarItemProps) {
   const { sidebarCollapsed } = useUiStore();
+
+  // Dynamically get the Lucide icon component
+  const IconComponent = (LucideIcons as any)[item.icon] || LucideIcons.Circle;
 
   return (
     <Link
@@ -20,12 +24,11 @@ export function SidebarItem({ item, isActive, onClick }: SidebarItemProps) {
           : 'text-white/60 hover:text-white hover:bg-white/5'
       )}
     >
-      <span className={cn(
-        'material-symbols-outlined shrink-0',
-        sidebarCollapsed ? 'text-xl' : ''
-      )}>
-        {item.icon}
-      </span>
+      <IconComponent
+        className="shrink-0"
+        size={sidebarCollapsed ? 20 : 20}
+        strokeWidth={2}
+      />
 
       {!sidebarCollapsed && (
         <>

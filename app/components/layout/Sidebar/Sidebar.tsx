@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
-import { PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { PanelLeftOpen, PanelLeftClose, Star, PlusCircle, MoreVertical, User, Settings, LogOut } from 'lucide-react';
 import { SidebarItem } from './SidebarItem';
 import { SIDEBAR_NAV } from '@/constants';
 import { Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTrigger } from '@/components/ui/Dropdown';
@@ -33,7 +33,7 @@ export function Sidebar({ className = '', isCreator = false, onBecomeCreator }: 
               className="text-white/60 hover:text-white transition-colors"
               aria-label="Expand sidebar"
             >
-              <PanelLeftOpen size={24} />
+              <PanelLeftOpen size={20} />
             </button>
           </div>
         ) : (
@@ -49,7 +49,7 @@ export function Sidebar({ className = '', isCreator = false, onBecomeCreator }: 
             <div className="flex items-center gap-2">
               <h1 className='font-bold text-xl'>Patreon</h1>
               <div className="size-8 bg-[#3c3cf6] rounded-lg flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-white font-bold">star</span>
+                <Star className="text-white" size={20} fill="currentColor" />
               </div>
             </div>
           </div>
@@ -75,7 +75,7 @@ export function Sidebar({ className = '', isCreator = false, onBecomeCreator }: 
             className={`w-full flex items-center rounded-xl bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] text-white text-sm font-bold hover:shadow-[0_0_30px_-5px_rgba(60,60,246,0.5)] transition-all duration-300 active:scale-[0.98] ${sidebarCollapsed ? 'justify-center p-3' : 'justify-start gap-3 px-4 py-3'
               }`}
           >
-            <span className="material-symbols-outlined text-lg">add_circle</span>
+            <PlusCircle size={20} />
             {!sidebarCollapsed && <span>Become a Creator</span>}
           </button>
         </div>
@@ -103,7 +103,7 @@ export function Sidebar({ className = '', isCreator = false, onBecomeCreator }: 
                     </p>
                   </div>
                   <button className="ml-auto text-white/40 hover:text-white">
-                    <span className="material-symbols-outlined text-sm">more_vert</span>
+                    <MoreVertical size={20} />
                   </button>
                 </>
               )}
@@ -117,16 +117,16 @@ export function Sidebar({ className = '', isCreator = false, onBecomeCreator }: 
             </div>
             <DropdownSeparator />
             <DropdownItem onClick={() => router.push(`/creator/${account.address}`)}>
-              <span className="material-symbols-outlined text-lg">person</span>
+              <User size={20} />
               Profile
             </DropdownItem>
             <DropdownItem>
-              <span className="material-symbols-outlined text-lg">settings</span>
+              <Settings size={20} />
               Settings
             </DropdownItem>
             <DropdownSeparator />
             <DropdownItem onClick={() => disconnect()} className="text-red-400 hover:text-red-400 hover:bg-red-500/10">
-              <span className="material-symbols-outlined text-lg">logout</span>
+              <LogOut size={20} />
               Disconnect
             </DropdownItem>
           </DropdownContent>
