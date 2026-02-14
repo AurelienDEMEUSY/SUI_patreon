@@ -31,7 +31,8 @@ export function buildCreateProfile(
 export function buildUpdateProfile(
     serviceObjectId: string,
     name: string,
-    description: string
+    description: string,
+    avatarBlobId: string = ""
 ): Transaction {
     const tx = new Transaction();
     tx.moveCall({
@@ -40,6 +41,7 @@ export function buildUpdateProfile(
             tx.object(serviceObjectId),
             tx.pure.string(name),
             tx.pure.string(description),
+            tx.pure.string(avatarBlobId),
         ],
     });
     return tx;

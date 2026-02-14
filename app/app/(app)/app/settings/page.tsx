@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { PageContainer } from '@/components/layout';
 import { DeleteCreatorModal } from '@/components/creator/DeleteCreatorModal';
 import { useAutoRegister } from '@/hooks/useAutoRegister';
@@ -39,7 +40,9 @@ export default function SettingsPage() {
                             <p className="font-semibold">Profile</p>
                             <p className="text-sm text-gray-400">Manage your avatar and bio</p>
                         </div>
-                        <button className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors">Edit</button>
+                        <Link href="/app/settings/profile">
+                            <button className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors">Edit</button>
+                        </Link>
                     </div>
                     <div className="flex items-center justify-between py-4 border-b border-white/5">
                         <div>

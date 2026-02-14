@@ -88,3 +88,24 @@ export async function uploadEncryptedContent(
     const result = await uploadToWalrus(encryptedData);
     return result.blobId;
 }
+
+// ============================================================
+// Public image upload (avatars, banners — NOT encrypted)
+// ============================================================
+
+/**
+ * Upload a public image file to Walrus (no encryption).
+ * Returns the Walrus blob ID.
+ */
+export async function uploadPublicImage(file: File): Promise<string> {
+    const buffer = new Uint8Array(await file.arrayBuffer());
+    const result = await uploadToWalrus(buffer);
+    return result.blobId;
+}
+
+/**
+ * Build a Walrus aggregator URL for displaying a public blob.
+ */
+export function getWalrusImageUrl(blobId: string): string {
+    return `${WALRUS_AGGREGATOR_URL}/v1/blobs/${blobId}`;
+}
