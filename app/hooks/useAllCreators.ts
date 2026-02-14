@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { PACKAGE_ID } from '@/lib/contract-constants';
 import { getDeletedCreatorCounts, isCreatorDeleted } from '@/lib/service-lookup';
+import { getSubscriberCount } from '@/lib/subscriber-count';
 import type { Creator } from '@/types';
 
 /**
@@ -103,6 +104,13 @@ export function useAllCreators() {
                         },
                     );
 
+                    let totalSubscribers = 0;
+                    try {
+                        totalSubscribers = await getSubscriberCount(suiClient, entry.serviceObjectId, fields);
+                    } catch {
+                        // keep 0 on error
+                    }
+
                     parsedCreators.push({
                         address: entry.address,
                         name: fields.name || 'Creator',
@@ -110,7 +118,7 @@ export function useAllCreators() {
                         avatarBlobId: null,
                         bannerBlobId: null,
                         suinsName: null,
-                        totalSubscribers: 0,
+                        totalSubscribers,
                         totalContent: (fields.posts || []).length,
                         tiers,
                         createdAt: Math.floor(Date.now() / 1000),

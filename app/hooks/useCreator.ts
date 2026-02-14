@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { findActiveServiceId } from '@/lib/service-lookup';
+import { getSubscriberCount } from '@/lib/subscriber-count';
 import { getWalrusImageUrl } from '@/lib/walrus';
 import type { Creator, Tier } from '@/types';
 
@@ -93,7 +94,9 @@ export function useCreator(addressOrServiceId: string | null) {
                     if (serviceObject.data?.content?.dataType === 'moveObject') {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const fields = (serviceObject.data.content as any).fields;
-                        setCreator(parseServiceToCreator(foundServiceId, fields, effectiveAddress));
+                        const creator = parseServiceToCreator(foundServiceId, fields, effectiveAddress);
+                        const totalSubscribers = await getSubscriberCount(suiClient, foundServiceId, fields);
+                        setCreator({ ...creator, totalSubscribers });
                         setServiceObjectId(foundServiceId);
                     }
                 } else {

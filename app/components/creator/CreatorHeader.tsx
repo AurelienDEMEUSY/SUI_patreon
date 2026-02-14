@@ -1,5 +1,6 @@
 'use client';
 
+import { createPortal } from 'react-dom';
 import { Creator, Tier } from '@/types';
 import { useSubscribe } from '@/hooks/useSubscribe';
 import { useCreatorBlobUrl } from '@/hooks/useCreatorBlobUrl';
@@ -30,7 +31,10 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
     const [subscribeError, setSubscribeError] = useState<string | null>(null);
     const [subscribeSuccess, setSubscribeSuccess] = useState(false);
     const [showTierMenu, setShowTierMenu] = useState(false);
+    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const { url: bannerUrl, isLoading: bannerLoading } = useCreatorBlobUrl(creator.bannerBlobId, serviceObjectId ?? undefined);
     const { url: avatarUrl, isLoading: avatarLoading } = useCreatorBlobUrl(creator.avatarBlobId, serviceObjectId ?? undefined);
@@ -38,10 +42,29 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
     const sortedTiers = [...creator.tiers].sort((a, b) => a.tierLevel - b.tierLevel);
     const hasTiers = sortedTiers.length > 0;
 
+    const openTierMenu = () => {
+        if (buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setDropdownPosition({
+                top: rect.bottom + 8,
+                right: window.innerWidth - rect.right,
+            });
+            setShowTierMenu(true);
+        }
+    };
+
+    const closeTierMenu = () => {
+        setShowTierMenu(false);
+        setDropdownPosition(null);
+    };
+
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setShowTierMenu(false);
+            const target = e.target as Node;
+            const inMenu = menuRef.current?.contains(target);
+            const inDropdown = dropdownRef.current?.contains(target);
+            if (!inMenu && !inDropdown) {
+                closeTierMenu();
             }
         };
         if (showTierMenu) document.addEventListener('mousedown', handleClickOutside);
@@ -49,7 +72,7 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
     }, [showTierMenu]);
 
     const handleSubscribe = async (tier: Tier) => {
-        setShowTierMenu(false);
+        closeTierMenu();
         setSubscribeError(null);
         setSubscribeSuccess(false);
 
@@ -163,7 +186,9 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
                                                     {hasTiers ? (
                                                         <>
                                                             <button
-                                                                onClick={() => setShowTierMenu((v) => !v)}
+                                                                ref={buttonRef}
+                                                                type="button"
+                                                                onClick={() => (showTierMenu ? closeTierMenu() : openTierMenu())}
                                                                 disabled={isSubscribing}
                                                                 className="h-11 px-7 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] hover:from-[#4f4ff8] hover:to-[#7c7ff9] text-white font-bold rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(60,60,246,0.5)] hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.7)] active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                                                             >
@@ -181,30 +206,42 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
                                                                 )}
                                                             </button>
 
-                                                            {showTierMenu && (
-                                                                <div className="absolute right-0 mt-2 w-72 rounded-xl bg-[#141428] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden z-50">
-                                                                    <div className="px-4 py-3 border-b border-white/[0.06]">
-                                                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">Choose a tier</p>
-                                                                    </div>
-                                                                    {sortedTiers.map((tier) => (
-                                                                        <button
-                                                                            key={tier.id}
-                                                                            onClick={() => handleSubscribe(tier)}
-                                                                            className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors text-left group/tier"
-                                                                        >
-                                                                            <div className="min-w-0">
-                                                                                <p className="text-sm font-bold text-white truncate group-hover/tier:text-[#3c3cf6] transition-colors">{tier.name}</p>
-                                                                                <p className="text-[11px] text-gray-500">
-                                                                                    {tier.durationMs ? `per ${format.duration(tier.durationMs)}` : 'per month'}
-                                                                                </p>
-                                                                            </div>
-                                                                            <span className="text-sm font-black text-white shrink-0">
-                                                                                {format.mistToSui(tier.priceInMist)} <span className="text-[#3c3cf6] text-xs font-bold">SUI</span>
-                                                                            </span>
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            )}
+                                                            {showTierMenu &&
+                                                                dropdownPosition &&
+                                                                typeof document !== 'undefined' &&
+                                                                createPortal(
+                                                                    <div
+                                                                        ref={dropdownRef}
+                                                                        className="fixed w-72 rounded-xl bg-[#141428] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden z-[100]"
+                                                                        style={{
+                                                                            top: dropdownPosition.top,
+                                                                            right: dropdownPosition.right,
+                                                                        }}
+                                                                    >
+                                                                        <div className="px-4 py-3 border-b border-white/[0.06]">
+                                                                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">Choose a tier</p>
+                                                                        </div>
+                                                                        {sortedTiers.map((tier) => (
+                                                                            <button
+                                                                                key={tier.id}
+                                                                                type="button"
+                                                                                onClick={() => handleSubscribe(tier)}
+                                                                                className="w-full px-4 py-3 flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors text-left group/tier"
+                                                                            >
+                                                                                <div className="min-w-0">
+                                                                                    <p className="text-sm font-bold text-white truncate group-hover/tier:text-[#3c3cf6] transition-colors">{tier.name}</p>
+                                                                                    <p className="text-[11px] text-gray-500">
+                                                                                        {tier.durationMs ? `per ${format.duration(tier.durationMs)}` : 'per month'}
+                                                                                    </p>
+                                                                                </div>
+                                                                                <span className="text-sm font-black text-white shrink-0">
+                                                                                    {format.mistToSui(tier.priceInMist)} <span className="text-[#3c3cf6] text-xs font-bold">SUI</span>
+                                                                                </span>
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>,
+                                                                    document.body,
+                                                                )}
                                                         </>
                                                     ) : (
                                                         <span className="h-11 px-7 bg-white/[0.05] text-gray-500 font-bold rounded-xl border border-white/10 flex items-center justify-center gap-2 text-sm cursor-default">
