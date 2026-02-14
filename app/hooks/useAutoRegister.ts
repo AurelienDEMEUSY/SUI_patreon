@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { buildCreateProfile, buildSetSuinsName } from '@/lib/contract';
-import { findActiveServiceId } from '@/lib/service-lookup';
+import { findActiveServiceIdGraphQL } from '@/lib/graphql/queries/creators';
 import { useSponsoredTransaction } from '@/enoki/sponsor';
 
 /**
@@ -99,7 +99,7 @@ export function useAutoRegister() {
 
                 // Handle race-condition: profile already exists on-chain
                 if (message.includes('ECreatorAlreadyExists') || message.includes('MoveAbort')) {
-                    const existingId = await findActiveServiceId(suiClient, currentAccount.address);
+                    const existingId = await findActiveServiceIdGraphQL(currentAccount.address);
                     if (existingId) {
                         setServiceObjectId(existingId);
                         setNeedsRegistration(false);
@@ -133,7 +133,7 @@ export function useAutoRegister() {
             setError(null);
 
             try {
-                const existingId = await findActiveServiceId(suiClient, currentAccount.address);
+                const existingId = await findActiveServiceIdGraphQL(currentAccount.address);
                 if (existingId) {
                     setServiceObjectId(existingId);
                     setNeedsRegistration(false);

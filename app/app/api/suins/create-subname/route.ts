@@ -9,7 +9,7 @@ import {
     SUINS_PARENT_NFT_ID,
     SUINS_PARENT_NAME,
 } from "@/lib/contract-constants";
-import { findActiveServiceId } from "@/lib/service-lookup";
+import { findActiveServiceIdGraphQL } from "@/lib/graphql/queries/creators";
 
 // ============================================================
 // POST /api/suins/create-subname
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
         // ----------------------------------------------------------------
         // 2. Verify the creator has an active Service on the platform
         // ----------------------------------------------------------------
-        const serviceObjectId = await findActiveServiceId(client, creatorAddress);
+        const serviceObjectId = await findActiveServiceIdGraphQL(creatorAddress);
         if (!serviceObjectId) {
             return NextResponse.json(
                 { error: "No active creator profile found for this address" },

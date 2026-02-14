@@ -1,132 +1,126 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
-import { findActiveServiceId } from '@/lib/service-lookup';
-import { getWalrusImageUrl } from '@/lib/walrus';
-import type { Creator, Tier } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { useCurrentAccount } from '@mysten/dapp-kit';
+import { INDEXER_API_URL } from '@/lib/contract-constants';
+import { getCreator, getCreators } from '@/lib/indexer-api';
+import { queryCreatorByObjectId, queryAllCreators } from '@/lib/graphql/queries/creators';
+import { parseServiceToCreator } from '@/lib/graphql/parsers';
+import type { ServiceJson } from '@/lib/graphql/parsers';
+import type { Creator } from '@/types';
 
-/**
- * Parse on-chain Service object fields into our Creator type.
- */
-function parseServiceToCreator(
-    serviceObjectId: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    fields: any,
-    creatorAddress: string,
-): Creator {
-    const tiers: Tier[] = (fields.tiers || []).map(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (t: any, index: number) => {
-            const tf = t.fields || t;
-            return {
-                id: `${serviceObjectId}_tier_${tf.tier_level}`,
-                creatorAddress,
-                name: tf.name || '',
-                description: '',
-                priceInMist: Number(tf.price || 0),
-                sealPolicyId: serviceObjectId,
-                benefits: [],
-                subscriberCount: 0,
-                order: Number(tf.tier_level || index + 1),
-                tierLevel: Number(tf.tier_level || index + 1),
-                durationMs: Number(tf.duration_ms || 0),
-            };
-        }
-    );
+interface CreatorResult {
+    creator: Creator;
+    serviceObjectId: string | null;
+}
 
+/** Default empty profile for when no creator exists */
+function defaultProfile(address: string): CreatorResult {
     return {
-        address: creatorAddress,
-        name: fields.name || 'Creator',
-        bio: fields.description || '',
-        avatarBlobId: fields.avatar_blob_id
-            ? getWalrusImageUrl(fields.avatar_blob_id)
-            : null,
-        bannerBlobId: null,
-        suinsName: fields.suins_name?.fields?.vec?.[0] ?? null,
-        totalSubscribers: 0,
-        totalContent: (fields.posts || []).length,
-        tiers,
-        createdAt: Math.floor(Date.now() / 1000),
-        serviceObjectId,
+        creator: {
+            address,
+            name: 'New Creator',
+            bio: 'Welcome! Connect your wallet and start creating.',
+            avatarBlobId: null,
+            bannerBlobId: null,
+            suinsName: null,
+            totalSubscribers: 0,
+            totalContent: 0,
+            tiers: [],
+            createdAt: Math.floor(Date.now() / 1000),
+        },
+        serviceObjectId: null,
     };
 }
 
 /**
- * Hook to fetch a single creator's data from on-chain.
+ * Hook to fetch a single creator's data from on-chain via GraphQL + React Query.
  *
- * 1. Resolves the address to an active Service object ID (handles deleted profiles).
- * 2. Fetches the Service object and parses it into our Creator type.
- * 3. Falls back to a default empty profile if no Service exists.
+ * Uses React Query for caching — navigating between pages won't re-fetch.
+ *
+ * Strategy:
+ * 1. Search all Service objects for one where `creator == address`
+ * 2. If not found and looks like an object ID, try direct query
+ * 3. Falls back to a default empty profile if no Service exists
  */
 export function useCreator(addressOrServiceId: string | null) {
-    const [creator, setCreator] = useState<Creator | null>(null);
-    const [serviceObjectId, setServiceObjectId] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
     const currentAccount = useCurrentAccount();
-    const suiClient = useSuiClient();
     const effectiveAddress = addressOrServiceId || currentAccount?.address || null;
 
-    useEffect(() => {
-        if (!effectiveAddress) return;
+    const { data, isLoading, error } = useQuery({
+        queryKey: ['creator', effectiveAddress],
+        queryFn: async (): Promise<CreatorResult> => {
+            if (!effectiveAddress) return defaultProfile('');
 
-        let cancelled = false;
-        setIsLoading(true);
-        setError(null);
-
-        const fetchCreator = async () => {
-            try {
-                const foundServiceId = await findActiveServiceId(suiClient, effectiveAddress);
-
-                if (cancelled) return;
-
-                if (foundServiceId) {
-                    const serviceObject = await suiClient.getObject({
-                        id: foundServiceId,
-                        options: { showContent: true },
-                    });
-
-                    if (cancelled) return;
-
-                    if (serviceObject.data?.content?.dataType === 'moveObject') {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const fields = (serviceObject.data.content as any).fields;
-                        setCreator(parseServiceToCreator(foundServiceId, fields, effectiveAddress));
-                        setServiceObjectId(foundServiceId);
+            if (INDEXER_API_URL) {
+                console.log('[useCreator] Using indexer API');
+                // Indexer: try by service object ID first, then by creator address
+                const isObjectId =
+                    effectiveAddress.startsWith('0x') && effectiveAddress.length > 42;
+                if (isObjectId) {
+                    const creator = await getCreator(effectiveAddress);
+                    if (creator) {
+                        return { creator, serviceObjectId: effectiveAddress };
                     }
-                } else {
-                    setCreator({
-                        address: effectiveAddress,
-                        name: 'New Creator',
-                        bio: 'Welcome! Connect your wallet and start creating.',
-                        avatarBlobId: null,
-                        bannerBlobId: null,
-                        suinsName: null,
-                        totalSubscribers: 0,
-                        totalContent: 0,
-                        tiers: [],
-                        createdAt: Math.floor(Date.now() / 1000),
-                    });
-                    setServiceObjectId(null);
                 }
-            } catch (err) {
-                if (!cancelled) {
-                    console.error('[useCreator] fetch error:', err);
-                    setError(err instanceof Error ? err.message : 'Failed to fetch creator');
+                const creators = await getCreators(effectiveAddress);
+                const c = creators[0];
+                if (c) {
+                    return {
+                        creator: c,
+                        serviceObjectId: c.serviceObjectId ?? null,
+                    };
                 }
-            } finally {
-                if (!cancelled) {
-                    setIsLoading(false);
+                return defaultProfile(effectiveAddress);
+            }
+
+            console.log('[useCreator] Using GraphQL');
+            // GraphQL: search all Service objects for one matching this creator address
+            const result = await queryAllCreators(50);
+            const nodes = result.data?.objects?.nodes ?? [];
+
+            let foundNode = nodes.find((n) => {
+                const json = n.asMoveObject?.contents?.json as ServiceJson | undefined;
+                return json?.creator === effectiveAddress;
+            });
+
+            if (!foundNode) {
+                foundNode = nodes.find((n) => n.address === effectiveAddress);
+            }
+
+            if (!foundNode && effectiveAddress.startsWith('0x') && effectiveAddress.length > 42) {
+                const directResult = await queryCreatorByObjectId(effectiveAddress);
+                const json = directResult.data?.object?.asMoveObject?.contents?.json as ServiceJson | undefined;
+                if (json) {
+                    const addr = directResult.data?.object?.address;
+                    if (addr) {
+                        return {
+                            creator: parseServiceToCreator(addr, json),
+                            serviceObjectId: addr,
+                        };
+                    }
                 }
             }
-        };
 
-        fetchCreator();
+            if (foundNode) {
+                const json = foundNode.asMoveObject?.contents?.json as ServiceJson;
+                return {
+                    creator: parseServiceToCreator(foundNode.address, json),
+                    serviceObjectId: foundNode.address,
+                };
+            }
 
-        return () => { cancelled = true; };
-    }, [effectiveAddress, suiClient]);
+            return defaultProfile(effectiveAddress);
+        },
+        enabled: !!effectiveAddress,
+        staleTime: 30_000,
+        gcTime: 5 * 60_000,
+    });
 
-    return { creator, serviceObjectId, isLoading, error };
+    return {
+        creator: data?.creator ?? null,
+        serviceObjectId: data?.serviceObjectId ?? null,
+        isLoading,
+        error: error ? (error instanceof Error ? error.message : 'Failed to fetch creator') : null,
+    };
 }

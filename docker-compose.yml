@@ -1,0 +1,66 @@
+# DePatreon — Full stack
+# Usage: docker compose up -d
+# Or:    ./scripts/run.sh
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: depatreon
+      POSTGRES_PASSWORD: depatreon
+      POSTGRES_DB: depatreon_indexer
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U depatreon"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  indexer:
+    build:
+      context: ./indexer
+      dockerfile: Dockerfile
+    command: ["/app/depatreon-indexer", "--remote-store-url", "https://checkpoints.testnet.sui.io"]
+    environment:
+      DATABASE_URL: postgres://depatreon:depatreon@postgres:5432/depatreon_indexer
+      PACKAGE_ID: ${PACKAGE_ID:-0x778ecde37896bf33ce157208cbd90a3d7e42475de59875d66f9db34031258d12}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./indexer
+      dockerfile: Dockerfile
+    command: ["/app/api"]
+    environment:
+      DATABASE_URL: postgres://depatreon:depatreon@postgres:5432/depatreon_indexer
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_INDEXER_API_URL: ${NEXT_PUBLIC_INDEXER_API_URL:-http://localhost:3001}
+    ports:
+      - "3000:3000"
+    environment:
+      # Env vars for runtime (non-NEXT_PUBLIC are server-side)
+      NEXT_PUBLIC_PACKAGE_ID: ${NEXT_PUBLIC_PACKAGE_ID:-}
+      NEXT_PUBLIC_PLATFORM_ID: ${NEXT_PUBLIC_PLATFORM_ID:-}
+      NEXT_PUBLIC_SUI_NETWORK: ${NEXT_PUBLIC_SUI_NETWORK:-testnet}
+      NEXT_PUBLIC_ENOKI_API_KEY: ${NEXT_PUBLIC_ENOKI_API_KEY:-}
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

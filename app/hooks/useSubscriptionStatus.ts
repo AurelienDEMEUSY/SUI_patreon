@@ -1,7 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
+import { useQuery } from '@tanstack/react-query';
+import { useCurrentAccount } from '@mysten/dapp-kit';
+import { INDEXER_API_URL } from '@/lib/contract-constants';
+import { getSubscriptionStatus } from '@/lib/indexer-api';
+import { queryCreatorByObjectId } from '@/lib/graphql/queries/creators';
+import { querySubscriptionStatus } from '@/lib/graphql/queries/subscriptions';
+import { getSubscribersTableId } from '@/lib/graphql/parsers';
+import type { ServiceJson } from '@/lib/graphql/parsers';
 
 export interface SubscriptionStatus {
     /** Whether the current user has an active (non-expired) subscription */
@@ -16,100 +22,86 @@ export interface SubscriptionStatus {
 
 /**
  * Hook to check if the current connected wallet has an active subscription
- * to a given creator's Service object.
+ * to a given creator's Service object via GraphQL + React Query.
  *
- * Reads the `subscribers` Table inside the Service object via
- * `getDynamicFieldObject` using the subscriber address as key.
+ * MIGRATED: JSON-RPC (2 calls) → GraphQL → React Query (cached).
  */
 export function useSubscriptionStatus(serviceObjectId: string | null | undefined): SubscriptionStatus {
-    const [status, setStatus] = useState<SubscriptionStatus>({
-        isSubscribed: false,
-        tierLevel: 0,
-        expiresAtMs: 0,
-        isLoading: false,
-    });
-
     const currentAccount = useCurrentAccount();
-    const suiClient = useSuiClient();
+    const subscriberAddress = currentAccount?.address ?? null;
 
-    useEffect(() => {
-        if (!serviceObjectId || !currentAccount?.address) {
-            return;
-        }
+    const { data, isLoading } = useQuery({
+        queryKey: ['subscriptionStatus', serviceObjectId, subscriberAddress],
+        queryFn: async () => {
+            if (!serviceObjectId || !subscriberAddress) {
+                return { isSubscribed: false, tierLevel: 0, expiresAtMs: 0 };
+            }
 
-        let cancelled = false;
+            if (INDEXER_API_URL) {
+                console.log('[useSubscriptionStatus] Using indexer API');
+                const status = await getSubscriptionStatus(
+                    subscriberAddress,
+                    serviceObjectId,
+                );
+                if (!status) {
+                    return { isSubscribed: false, tierLevel: 0, expiresAtMs: 0 };
+                }
+                return {
+                    isSubscribed: status.expiresAtMs > Date.now(),
+                    tierLevel: status.tierLevel,
+                    expiresAtMs: status.expiresAtMs,
+                };
+            }
 
-        const check = async () => {
-            setStatus((prev) => ({ ...prev, isLoading: true }));
+            console.log('[useSubscriptionStatus] Using GraphQL');
+            // GraphQL: fetch Service object, then subscribers table
+            const serviceResult = await queryCreatorByObjectId(serviceObjectId);
+            const json = serviceResult.data?.object?.asMoveObject?.contents?.json as ServiceJson | undefined;
+
+            if (!json) {
+                return { isSubscribed: false, tierLevel: 0, expiresAtMs: 0 };
+            }
+
+            const subscribersTableId = getSubscribersTableId(json);
+            if (!subscribersTableId) {
+                return { isSubscribed: false, tierLevel: 0, expiresAtMs: 0 };
+            }
 
             try {
-                // 1. Fetch the Service object to get the subscribers Table UID
-                const serviceObj = await suiClient.getObject({
-                    id: serviceObjectId,
-                    options: { showContent: true },
-                });
-
-                if (cancelled) return;
-
-                if (serviceObj.data?.content?.dataType !== 'moveObject') {
-                    setStatus({ isSubscribed: false, tierLevel: 0, expiresAtMs: 0, isLoading: false });
-                    return;
-                }
+                const subResult = await querySubscriptionStatus(
+                    subscribersTableId,
+                    subscriberAddress,
+                );
 
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const fields = (serviceObj.data.content as any).fields;
-                // The subscribers field is a Table — its UID is at fields.subscribers.fields.id.id
-                const subscribersTableId = fields?.subscribers?.fields?.id?.id;
+                const subValue = subResult.data?.object?.dynamicField?.value as any;
+                const subJson = subValue?.json;
 
-                if (!subscribersTableId) {
-                    setStatus({ isSubscribed: false, tierLevel: 0, expiresAtMs: 0, isLoading: false });
-                    return;
+                if (!subJson) {
+                    return { isSubscribed: false, tierLevel: 0, expiresAtMs: 0 };
                 }
 
-                // 2. Query the dynamic field for the current user's address
-                const dynField = await suiClient.getDynamicFieldObject({
-                    parentId: subscribersTableId,
-                    name: {
-                        type: 'address',
-                        value: currentAccount.address,
-                    },
-                });
+                const tier = Number(subJson.tier ?? 0);
+                const expiresAtMs = Number(subJson.expires_at_ms ?? 0);
 
-                if (cancelled) return;
-
-                if (!dynField.data?.content || dynField.data.content.dataType !== 'moveObject') {
-                    // No subscription entry for this user
-                    setStatus({ isSubscribed: false, tierLevel: 0, expiresAtMs: 0, isLoading: false });
-                    return;
-                }
-
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const subFields = (dynField.data.content as any).fields?.value?.fields;
-                const tier = Number(subFields?.tier ?? 0);
-                const expiresAtMs = Number(subFields?.expires_at_ms ?? 0);
-                const now = Date.now();
-
-                setStatus({
-                    isSubscribed: expiresAtMs > now,
+                return {
+                    isSubscribed: expiresAtMs > Date.now(),
                     tierLevel: tier,
                     expiresAtMs,
-                    isLoading: false,
-                });
-            } catch (err) {
-                // getDynamicFieldObject throws if the field doesn't exist on some versions
-                if (!cancelled) {
-                    console.warn('[useSubscriptionStatus] Error checking subscription:', err);
-                    setStatus({ isSubscribed: false, tierLevel: 0, expiresAtMs: 0, isLoading: false });
-                }
+                };
+            } catch {
+                return { isSubscribed: false, tierLevel: 0, expiresAtMs: 0 };
             }
-        };
+        },
+        enabled: !!serviceObjectId && !!subscriberAddress,
+        staleTime: 15_000,
+        gcTime: 5 * 60_000,
+    });
 
-        check();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [serviceObjectId, currentAccount?.address, suiClient]);
-
-    return status;
+    return {
+        isSubscribed: data?.isSubscribed ?? false,
+        tierLevel: data?.tierLevel ?? 0,
+        expiresAtMs: data?.expiresAtMs ?? 0,
+        isLoading,
+    };
 }

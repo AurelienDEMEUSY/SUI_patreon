@@ -29,6 +29,23 @@ export const SERVICE_MODULE = "service";
 export const SUBSCRIPTION_MODULE = "subscription";
 
 // ============================================================
+// Indexer API (optional — if set, frontend uses indexer instead of GraphQL)
+// ============================================================
+
+export const INDEXER_API_URL = process.env.NEXT_PUBLIC_INDEXER_API_URL ?? null;
+
+// ============================================================
+// GraphQL Configuration
+// ============================================================
+
+/**
+ * SUI GraphQL RPC Beta endpoint.
+ * @see https://docs.sui.io/guides/developer/getting-started/graphql-rpc
+ */
+export const SUI_GRAPHQL_URL = process.env.NEXT_PUBLIC_SUI_GRAPHQL_URL
+    ?? `https://graphql.${SUI_NETWORK}.sui.io/graphql`;
+
+// ============================================================
 // Enoki Sponsored Transactions — Allowed Targets & Addresses
 // ============================================================
 
