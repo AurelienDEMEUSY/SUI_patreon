@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { buildCreateProfile, buildSetSuinsName } from '@/lib/contract';
 import { findActiveServiceId } from '@/lib/service-lookup';
+import { useSponsoredTransaction } from '@/enoki/sponsor';
 
 /**
  * Auto-registration hook.
@@ -13,11 +14,12 @@ import { findActiveServiceId } from '@/lib/service-lookup';
  * - Not found → sets `needsRegistration = true` so the UI can show the create-profile form.
  *
  * The `register()` callback is invoked manually after the user fills in the form.
+ * Uses sponsored transactions (Enoki) — zero gas for the user.
  */
 export function useAutoRegister() {
     const currentAccount = useCurrentAccount();
     const suiClient = useSuiClient();
-    const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+    const { sponsorAndExecute } = useSponsoredTransaction();
 
     const [serviceObjectId, setServiceObjectId] = useState<string | null>(null);
     const [needsRegistration, setNeedsRegistration] = useState(false);
@@ -27,7 +29,10 @@ export function useAutoRegister() {
 
     const checkedRef = useRef<string | null>(null);
 
-    /** Register as a creator on-chain with user-provided name & description. */
+    /**
+     * Register as a creator on-chain with user-provided name & description.
+     * Uses sponsorAndExecute so the user pays zero gas.
+     */
     const register = useCallback(
         async (name: string, description: string): Promise<string | null> => {
             if (!currentAccount) return null;
@@ -38,7 +43,7 @@ export function useAutoRegister() {
             try {
                 // Step 1: Create the profile on-chain
                 const tx = buildCreateProfile(name, description);
-                const result = await signAndExecute({ transaction: tx });
+                const result = await sponsorAndExecute(tx);
 
                 const txResult = await suiClient.waitForTransaction({
                     digest: result.digest,
@@ -72,7 +77,7 @@ export function useAutoRegister() {
                         if (suinsName) {
                             try {
                                 const setSuinsTx = buildSetSuinsName(newServiceId, suinsName);
-                                const suinsResult = await signAndExecute({ transaction: setSuinsTx });
+                                const suinsResult = await sponsorAndExecute(setSuinsTx);
                                 await suiClient.waitForTransaction({ digest: suinsResult.digest });
                             } catch (suinsErr) {
                                 // Non-blocking: leaf exists on SuiNS even if contract link fails
@@ -108,7 +113,7 @@ export function useAutoRegister() {
                 setIsRegistering(false);
             }
         },
-        [currentAccount, signAndExecute, suiClient],
+        [currentAccount, sponsorAndExecute, suiClient],
     );
 
     // On wallet connect: detect existing profile (don't auto-create)

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit';
+import { useSuiClient, useCurrentAccount } from '@mysten/dapp-kit';
 import { buildDeleteProfile } from '@/lib/contract';
+import { useSponsoredTransaction } from '@/enoki/sponsor';
 
 interface UseDeleteCreatorResult {
     /** Delete the creator profile on-chain */
@@ -18,6 +19,7 @@ interface UseDeleteCreatorResult {
 /**
  * Hook to delete a creator's profile from the platform.
  * Calls delete_creator_profile on the Move contract.
+ * Uses sponsored transactions (Enoki) — zero gas for the user.
  *
  * Requirements:
  * - The creator must have no active subscribers (enforced on-chain).
@@ -29,7 +31,7 @@ export function useDeleteCreator(): UseDeleteCreatorResult {
     const [error, setError] = useState<string | null>(null);
     const [isSuccess, setIsSuccess] = useState(false);
     const currentAccount = useCurrentAccount();
-    const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+    const { sponsorAndExecute } = useSponsoredTransaction();
     const suiClient = useSuiClient();
 
     const deleteCreator = useCallback(async (
@@ -47,9 +49,7 @@ export function useDeleteCreator(): UseDeleteCreatorResult {
         try {
             const tx = buildDeleteProfile(serviceObjectId);
 
-            const result = await signAndExecute({
-                transaction: tx,
-            });
+            const result = await sponsorAndExecute(tx);
 
             // Wait for confirmation
             await suiClient.waitForTransaction({
@@ -73,7 +73,7 @@ export function useDeleteCreator(): UseDeleteCreatorResult {
         } finally {
             setIsLoading(false);
         }
-    }, [currentAccount, signAndExecute, suiClient]);
+    }, [currentAccount, sponsorAndExecute, suiClient]);
 
     return { deleteCreator, isLoading, error, isSuccess };
 }

@@ -12,6 +12,8 @@ const ALICE_TIERS: Tier[] = [
         benefits: ['Behind-the-scenes posts', 'Community chat access', 'Monthly Q&A'],
         subscriberCount: 98,
         order: 1,
+        tierLevel: 1,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_alice_002',
@@ -23,6 +25,8 @@ const ALICE_TIERS: Tier[] = [
         benefits: ['All Supporter benefits', 'Exclusive tutorials', 'Early access', 'HD downloads'],
         subscriberCount: 44,
         order: 2,
+        tierLevel: 2,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_alice_003',
@@ -34,6 +38,8 @@ const ALICE_TIERS: Tier[] = [
         benefits: ['All Premium benefits', '1-on-1 monthly session', 'Source files', 'Credits in projects'],
         subscriberCount: 12,
         order: 3,
+        tierLevel: 3,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
 ];
 
@@ -49,6 +55,8 @@ const BOB_TIERS: Tier[] = [
         benefits: ['Early track releases', 'Behind-the-scenes studio clips', 'Community Discord access'],
         subscriberCount: 340,
         order: 1,
+        tierLevel: 1,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_bob_002',
@@ -60,6 +68,8 @@ const BOB_TIERS: Tier[] = [
         benefits: ['All Listener benefits', 'Unreleased tracks & demos', 'Download stems & loops', 'Monthly live jam session'],
         subscriberCount: 120,
         order: 2,
+        tierLevel: 2,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_bob_003',
@@ -71,6 +81,8 @@ const BOB_TIERS: Tier[] = [
         benefits: ['All Superfan benefits', '1-on-1 production feedback', 'Collaboration opportunities', 'Credits on releases'],
         subscriberCount: 18,
         order: 3,
+        tierLevel: 3,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
 ];
 
@@ -86,6 +98,8 @@ const CHARLIE_TIERS: Tier[] = [
         benefits: ['Weekly code tutorials', 'Code snippets & templates', 'Community chat'],
         subscriberCount: 890,
         order: 1,
+        tierLevel: 1,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_charlie_002',
@@ -97,6 +111,8 @@ const CHARLIE_TIERS: Tier[] = [
         benefits: ['All Learner benefits', 'Full video courses', 'Private GitHub repos', 'Project walkthroughs'],
         subscriberCount: 450,
         order: 2,
+        tierLevel: 2,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_charlie_003',
@@ -108,6 +124,8 @@ const CHARLIE_TIERS: Tier[] = [
         benefits: ['All Builder benefits', 'Weekly code reviews', 'Monthly pair programming', 'Career coaching'],
         subscriberCount: 25,
         order: 3,
+        tierLevel: 3,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
 ];
 
@@ -123,6 +141,8 @@ const DIANA_TIERS: Tier[] = [
         benefits: ['Weekly workout plans', 'Nutrition tips & recipes', 'Community challenges'],
         subscriberCount: 1200,
         order: 1,
+        tierLevel: 1,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_diana_002',
@@ -134,6 +154,8 @@ const DIANA_TIERS: Tier[] = [
         benefits: ['All Starter benefits', 'Full training programs', 'Custom meal plans', 'Live group sessions'],
         subscriberCount: 680,
         order: 2,
+        tierLevel: 2,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_diana_003',
@@ -145,6 +167,8 @@ const DIANA_TIERS: Tier[] = [
         benefits: ['All Pro Athlete benefits', '1-on-1 coaching calls', 'Personalized plans', 'Weekly check-ins & adjustments'],
         subscriberCount: 45,
         order: 3,
+        tierLevel: 3,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
 ];
 
@@ -160,6 +184,8 @@ const EVE_TIERS: Tier[] = [
         benefits: ['High-res photo galleries', 'Editing breakdowns', 'Location guides'],
         subscriberCount: 560,
         order: 1,
+        tierLevel: 1,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_eve_002',
@@ -171,6 +197,8 @@ const EVE_TIERS: Tier[] = [
         benefits: ['All Observer benefits', 'Lightroom presets pack', 'RAW file downloads', 'Full editing tutorials'],
         subscriberCount: 290,
         order: 2,
+        tierLevel: 2,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
     {
         id: '0xtier_eve_003',
@@ -182,6 +210,8 @@ const EVE_TIERS: Tier[] = [
         benefits: ['All Photographer benefits', 'Portfolio reviews', '1-on-1 mentoring sessions', 'Collaboration on shoots'],
         subscriberCount: 32,
         order: 3,
+        tierLevel: 3,
+        durationMs: 30 * 24 * 60 * 60 * 1000,
     },
 ];
 

@@ -177,16 +177,43 @@ export function buildDeletePost(
 /**
  * Subscribe to a creator by paying the tier price in SUI.
  * Payment is split: creator (95%) + platform fee (5%).
+ *
+ * IMPORTANT — Sponsored transaction compatibility:
+ * Enoki forbids referencing `tx.gas` (GasCoin) in transaction arguments because
+ * the gas coin belongs to the sponsor, not the user. Instead, the caller must
+ * provide explicit SUI coin object(s) owned by the user. If multiple coins are
+ * provided, they are merged into the first one before splitting the payment.
+ *
+ * @param serviceObjectId  The creator's Service object ID
+ * @param tierLevel        The tier level to subscribe to
+ * @param paymentAmountMist The price in MIST (1 SUI = 1_000_000_000 MIST)
+ * @param userCoins        Array of the user's SUI coin objects (at least one required)
  */
 export function buildSubscribe(
     serviceObjectId: string,
     tierLevel: number,
-    paymentAmountMist: number
+    paymentAmountMist: number,
+    userCoins: { coinObjectId: string }[],
 ): Transaction {
+    if (userCoins.length === 0) {
+        throw new Error("No SUI coins provided for subscription payment");
+    }
+
     const tx = new Transaction();
 
-    // Split exact payment from gas coin
-    const [paymentCoin] = tx.splitCoins(tx.gas, [
+    // Reference the primary coin
+    const primaryCoin = tx.object(userCoins[0].coinObjectId);
+
+    // Merge additional coins into the primary if the user has multiple
+    if (userCoins.length > 1) {
+        tx.mergeCoins(
+            primaryCoin,
+            userCoins.slice(1).map((c) => tx.object(c.coinObjectId)),
+        );
+    }
+
+    // Split exact payment from the user's own coin (NOT tx.gas)
+    const [paymentCoin] = tx.splitCoins(primaryCoin, [
         tx.pure.u64(paymentAmountMist),
     ]);
 
