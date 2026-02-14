@@ -3,6 +3,7 @@
 import { Tier } from '@/types';
 import { format } from '@/lib/format';
 import { useSubscribe } from '@/hooks/useSubscribe';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useState } from 'react';
 
@@ -16,8 +17,13 @@ export function TierCard({ tier, serviceObjectId, onSubscribe }: TierCardProps) 
     const isPopular = tier.order === 2;
     const currentAccount = useCurrentAccount();
     const { subscribe, isLoading: isSubscribing } = useSubscribe();
+    const subscription = useSubscriptionStatus(serviceObjectId);
     const [subscribeSuccess, setSubscribeSuccess] = useState(false);
     const [subscribeError, setSubscribeError] = useState<string | null>(null);
+
+    // The user has access to this tier if their subscribed tier >= this tier's level
+    const hasAccess = subscription.isSubscribed && subscription.tierLevel >= tier.tierLevel;
+    const isExactTier = subscription.isSubscribed && subscription.tierLevel === tier.tierLevel;
 
     const handleSubscribe = async () => {
         setSubscribeError(null);
@@ -101,6 +107,23 @@ export function TierCard({ tier, serviceObjectId, onSubscribe }: TierCardProps) 
                     {tier.subscriberCount.toLocaleString()} subscribers
                 </div>
 
+                {/* Subscription Status Badge */}
+                {hasAccess && (
+                    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        <span className="material-symbols-outlined text-emerald-400 text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                        <div>
+                            <p className="text-xs font-bold text-emerald-400">
+                                {isExactTier ? 'Active subscription' : 'Access included'}
+                            </p>
+                            {isExactTier && (
+                                <p className="text-[10px] text-emerald-400/60">
+                                    Expires {new Date(subscription.expiresAtMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Success Message */}
                 {subscribeSuccess && (
                     <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold bg-emerald-400/10 px-3 py-2 rounded-lg">
@@ -120,7 +143,7 @@ export function TierCard({ tier, serviceObjectId, onSubscribe }: TierCardProps) 
                 {/* Subscribe Button */}
                 <button
                     onClick={handleSubscribe}
-                    disabled={isSubscribing}
+                    disabled={isSubscribing || hasAccess}
                     className={`w-full h-12 font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${isPopular
                         ? 'bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] text-white shadow-[0_0_30px_-5px_rgba(60,60,246,0.4)] hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.6)]'
                         : 'bg-white/[0.05] hover:bg-[#3c3cf6] text-white border border-white/10 hover:border-transparent hover:shadow-[0_0_30px_-5px_rgba(60,60,246,0.4)]'
@@ -131,10 +154,15 @@ export function TierCard({ tier, serviceObjectId, onSubscribe }: TierCardProps) 
                             <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span>
                             Processing...
                         </>
+                    ) : hasAccess ? (
+                        <>
+                            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                            {isExactTier ? 'Subscribed' : 'Included in your plan'}
+                        </>
                     ) : (
                         <>
                             <span className="material-symbols-outlined text-lg">loyalty</span>
-                            Subscribe
+                            {subscription.isSubscribed ? 'Upgrade' : 'Subscribe'}
                         </>
                     )}
                 </button>

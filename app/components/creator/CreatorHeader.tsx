@@ -2,6 +2,7 @@
 
 import { Creator, Tier } from '@/types';
 import { useSubscribe } from '@/hooks/useSubscribe';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { format } from '@/lib/format';
 import { useState, useRef, useEffect } from 'react';
@@ -17,6 +18,7 @@ interface CreatorHeaderProps {
 export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTier, onCreatePost }: CreatorHeaderProps) {
     const currentAccount = useCurrentAccount();
     const { subscribe, isLoading: isSubscribing } = useSubscribe();
+    const subscription = useSubscriptionStatus(serviceObjectId);
     const [subscribeError, setSubscribeError] = useState<string | null>(null);
     const [subscribeSuccess, setSubscribeSuccess] = useState(false);
     const [showTierMenu, setShowTierMenu] = useState(false);
@@ -138,7 +140,7 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
                                     </button>
                                 </div>
                             ) : (
-                                /* ── Visitor actions (subscribe dropdown) ── */
+                                /* ── Visitor actions ── */
                                 <>
                                     <div className="relative" ref={menuRef}>
                                 {hasTiers ? (

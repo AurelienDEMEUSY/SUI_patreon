@@ -5,12 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useCreator } from '@/hooks/useCreator';
 import { useAutoRegister } from '@/hooks/useAutoRegister';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { CreatorHeader } from '@/components/creator/CreatorHeader';
 import { CreatorStats } from '@/components/creator/CreatorStats';
 import { ProfileTabs } from '@/components/creator/ProfileTabs';
 import { ContentFeed } from '@/components/content/ContentFeed';
 import { TierCard } from '@/components/tier/TierCard';
 import { AddTierForm } from '@/components/tier/AddTierForm';
+import { format } from '@/lib/format';
 
 export default function CreatorProfilePage() {
     const params = useParams();
@@ -19,6 +21,7 @@ export default function CreatorProfilePage() {
     const currentAccount = useCurrentAccount();
     const { creator, serviceObjectId, isLoading, error } = useCreator(address);
     const { isRegistering, isChecking } = useAutoRegister();
+    const subscription = useSubscriptionStatus(serviceObjectId);
     const [activeTab, setActiveTab] = useState('posts');
     const [showAddTier, setShowAddTier] = useState(false);
 
@@ -175,6 +178,43 @@ export default function CreatorProfilePage() {
                 {/* Right Column: Sidebar (Sticky) */}
                 <div className="hidden lg:block">
                     <div className="sticky top-24 space-y-5">
+                        {/* Subscription Status */}
+                        {!isOwnProfile && subscription.isSubscribed && creator && (
+                            <div className="stat-card p-5 border border-emerald-500/20 bg-emerald-500/[0.03]">
+                                <h4 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-base text-emerald-400" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                                    Your Subscription
+                                </h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Tier</span>
+                                        <span className="text-sm font-bold text-emerald-400">
+                                            {creator.tiers.find(t => t.tierLevel === subscription.tierLevel)?.name || `Tier ${subscription.tierLevel}`}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Status</span>
+                                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                            Active
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Expires</span>
+                                        <span className="text-xs font-medium text-gray-400">
+                                            {new Date(subscription.expiresAtMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">Time Left</span>
+                                        <span className="text-xs font-medium text-gray-400">
+                                            {format.duration(subscription.expiresAtMs - Date.now())}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Quick About */}
                         {activeTab !== 'about' && (
                             <div className="stat-card p-5">

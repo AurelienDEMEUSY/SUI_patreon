@@ -22,6 +22,8 @@ export interface Tier {
     benefits: string[];
     subscriberCount: number;
     order: number;
+    tierLevel: number;
+    durationMs: number;
 }
 
 export type ContentType = 'text' | 'image' | 'video' | 'audio' | 'file';
