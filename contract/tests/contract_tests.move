@@ -362,7 +362,7 @@ fun test_crud_operations() {
         let mut service = scenario.take_shared<Service>();
 
         // Update Profile
-        service::update_creator_profile(&mut service, b"New Name".to_string(), b"New Desc".to_string(), scenario.ctx());
+        service::update_creator_profile(&mut service, b"New Name".to_string(), b"New Desc".to_string(), b"avatar123".to_string(), scenario.ctx());
         assert!(service::get_creator_name(&service) == b"New Name".to_string());
 
         // Create Post
@@ -401,5 +401,195 @@ fun test_admin_update_fee() {
         scenario.return_to_sender(cap);
         ts::return_shared(platform);
     };
+    scenario.end();
+}
+
+#[test]
+fun test_set_suins_name() {
+    let mut scenario = ts::begin(ADMIN);
+    { platform::init_for_testing(scenario.ctx()); };
+
+    scenario.next_tx(CREATOR);
+    {
+        let mut platform = scenario.take_shared<Platform>();
+        service::create_creator_profile(
+            &mut platform,
+            b"Creator".to_string(),
+            b"desc".to_string(),
+            scenario.ctx(),
+        );
+        ts::return_shared(platform);
+    };
+
+    // Set SuiNS name
+    scenario.next_tx(CREATOR);
+    {
+        let mut service = scenario.take_shared<Service>();
+        let mut platform = scenario.take_shared<Platform>();
+        service::set_suins_name(
+            &mut service,
+            &mut platform,
+            b"creator.patreon.sui".to_string(),
+            scenario.ctx(),
+        );
+        assert!(service::get_suins_name(&service) == option::some(b"creator.patreon.sui".to_string()));
+        ts::return_shared(service);
+        ts::return_shared(platform);
+    };
+
+    scenario.end();
+}
+
+#[test]
+fun test_remove_suins_name() {
+    let mut scenario = ts::begin(ADMIN);
+    { platform::init_for_testing(scenario.ctx()); };
+
+    scenario.next_tx(CREATOR);
+    {
+        let mut platform = scenario.take_shared<Platform>();
+        service::create_creator_profile(
+            &mut platform,
+            b"Creator".to_string(),
+            b"desc".to_string(),
+            scenario.ctx(),
+        );
+        ts::return_shared(platform);
+    };
+
+    // Set name
+    scenario.next_tx(CREATOR);
+    {
+        let mut service = scenario.take_shared<Service>();
+        let mut platform = scenario.take_shared<Platform>();
+        service::set_suins_name(
+            &mut service,
+            &mut platform,
+            b"creator.patreon.sui".to_string(),
+            scenario.ctx(),
+        );
+        ts::return_shared(service);
+        ts::return_shared(platform);
+    };
+
+    // Remove name
+    scenario.next_tx(CREATOR);
+    {
+        let mut service = scenario.take_shared<Service>();
+        let mut platform = scenario.take_shared<Platform>();
+        service::remove_suins_name(
+            &mut service,
+            &mut platform,
+            scenario.ctx(),
+        );
+        assert!(service::get_suins_name(&service) == option::none());
+        ts::return_shared(service);
+        ts::return_shared(platform);
+    };
+
+    scenario.end();
+}
+
+#[test]
+fun test_change_suins_name() {
+    let mut scenario = ts::begin(ADMIN);
+    { platform::init_for_testing(scenario.ctx()); };
+
+    scenario.next_tx(CREATOR);
+    {
+        let mut platform = scenario.take_shared<Platform>();
+        service::create_creator_profile(
+            &mut platform,
+            b"Creator".to_string(),
+            b"desc".to_string(),
+            scenario.ctx(),
+        );
+        ts::return_shared(platform);
+    };
+
+    // Set initial name
+    scenario.next_tx(CREATOR);
+    {
+        let mut service = scenario.take_shared<Service>();
+        let mut platform = scenario.take_shared<Platform>();
+        service::set_suins_name(
+            &mut service,
+            &mut platform,
+            b"old.patreon.sui".to_string(),
+            scenario.ctx(),
+        );
+        ts::return_shared(service);
+        ts::return_shared(platform);
+    };
+
+    // Change to new name
+    scenario.next_tx(CREATOR);
+    {
+        let mut service = scenario.take_shared<Service>();
+        let mut platform = scenario.take_shared<Platform>();
+        service::set_suins_name(
+            &mut service,
+            &mut platform,
+            b"new.patreon.sui".to_string(),
+            scenario.ctx(),
+        );
+        assert!(service::get_suins_name(&service) == option::some(b"new.patreon.sui".to_string()));
+        ts::return_shared(service);
+        ts::return_shared(platform);
+    };
+
+    scenario.end();
+}
+
+#[test]
+fun test_admin_remove_suins_name() {
+    let mut scenario = ts::begin(ADMIN);
+    { platform::init_for_testing(scenario.ctx()); };
+
+    scenario.next_tx(CREATOR);
+    {
+        let mut platform = scenario.take_shared<Platform>();
+        service::create_creator_profile(
+            &mut platform,
+            b"C".to_string(),
+            b"D".to_string(),
+            scenario.ctx(),
+        );
+        ts::return_shared(platform);
+    };
+
+    // Creator sets name
+    scenario.next_tx(CREATOR);
+    {
+        let mut service = scenario.take_shared<Service>();
+        let mut platform = scenario.take_shared<Platform>();
+        service::set_suins_name(
+            &mut service,
+            &mut platform,
+            b"c.patreon.sui".to_string(),
+            scenario.ctx(),
+        );
+        ts::return_shared(service);
+        ts::return_shared(platform);
+    };
+
+    // Admin removes the name
+    scenario.next_tx(ADMIN);
+    {
+        let mut service = scenario.take_shared<Service>();
+        let mut platform = scenario.take_shared<Platform>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        service::admin_remove_suins_name(
+            &mut service,
+            &mut platform,
+            &cap,
+            scenario.ctx(),
+        );
+        assert!(service::get_suins_name(&service) == option::none());
+        scenario.return_to_sender(cap);
+        ts::return_shared(service);
+        ts::return_shared(platform);
+    };
+
     scenario.end();
 }

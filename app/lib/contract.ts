@@ -31,7 +31,8 @@ export function buildCreateProfile(
 export function buildUpdateProfile(
     serviceObjectId: string,
     name: string,
-    description: string
+    description: string,
+    avatarBlobId: string = ""
 ): Transaction {
     const tx = new Transaction();
     tx.moveCall({
@@ -40,6 +41,7 @@ export function buildUpdateProfile(
             tx.object(serviceObjectId),
             tx.pure.string(name),
             tx.pure.string(description),
+            tx.pure.string(avatarBlobId),
         ],
     });
     return tx;
@@ -255,6 +257,49 @@ export function buildDeleteProfile(
     const tx = new Transaction();
     tx.moveCall({
         target: `${PACKAGE_ID}::${SERVICE_MODULE}::delete_creator_profile`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.object(PLATFORM_ID),
+        ],
+    });
+    return tx;
+}
+
+// ============================================================
+// SuiNS Name Management
+// ============================================================
+
+/**
+ * Link a SuiNS subname to the creator's Service.
+ * Must be signed by the creator (service.creator == sender).
+ * Called after the API route has created the leaf on SuiNS.
+ */
+export function buildSetSuinsName(
+    serviceObjectId: string,
+    suinsName: string,
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::set_suins_name`,
+        arguments: [
+            tx.object(serviceObjectId),
+            tx.object(PLATFORM_ID),
+            tx.pure.string(suinsName),
+        ],
+    });
+    return tx;
+}
+
+/**
+ * Remove the SuiNS subname link from the creator's Service.
+ * Must be signed by the creator.
+ */
+export function buildRemoveSuinsName(
+    serviceObjectId: string,
+): Transaction {
+    const tx = new Transaction();
+    tx.moveCall({
+        target: `${PACKAGE_ID}::${SERVICE_MODULE}::remove_suins_name`,
         arguments: [
             tx.object(serviceObjectId),
             tx.object(PLATFORM_ID),

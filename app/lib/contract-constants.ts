@@ -13,14 +13,14 @@ export const SUI_NETWORK = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "testnet") as
  * Set via NEXT_PUBLIC_PACKAGE_ID in .env.local after running `sui client publish`.
  */
 export const PACKAGE_ID = process.env.NEXT_PUBLIC_PACKAGE_ID
-    ?? "0xaf96d62a4f48d290a7b89ff06a378bffa6f52e8c99a522dbbaf809fb659d4bdd";
+    ?? "0x50739904d691799acda0acaf38e7bd4f4286000b32aaa3091f3195ddf9f7d94a";
 
 /**
  * The shared Platform object ID created during contract initialization.
  * Set via NEXT_PUBLIC_PLATFORM_ID in .env.local — emitted in the publish transaction.
  */
 export const PLATFORM_ID = process.env.NEXT_PUBLIC_PLATFORM_ID
-    ?? "0x21d04f36c70ce554b59913311a96a8287da4b146793b8640aaddac74fe7e5cce";
+    ?? "0xf0bcfd13795de886d60f189e210c6eb9beb2837285260ac3fece3c3aebaec9e8";
 
 /**
  * Move module names in the package.
@@ -96,3 +96,19 @@ export const WALRUS_AGGREGATOR_URL = "https://aggregator.walrus-testnet.walrus.s
  * Number of Walrus storage epochs (1 epoch ≈ 1 day on testnet).
  */
 export const WALRUS_EPOCHS = 5;
+
+// ============================================================
+// SuiNS Configuration
+// ============================================================
+
+/**
+ * The parent SuiNS name under which creator subnames are created.
+ * e.g., "alice.patreon.sui"
+ */
+export const SUINS_PARENT_NAME = "patreon.sui";
+
+/**
+ * Object ID of the SuinsRegistration NFT for the parent name (patreon.sui).
+ * The admin wallet that signs subname creation must own this NFT.
+ */
+export const SUINS_PARENT_NFT_ID = "0x91ea4d5e68745fd48494687c347c87c9088674a795d260c7b7d854d9f8b3f12e";

@@ -16,7 +16,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, serviceObjectId, isOwnProfile }: PostCardProps) {
-    const { metadata, images, isLoading, error, isUnlocked, unlock } = usePostContent(serviceObjectId, post);
+    const { metadata, images, isLoading, error, isUnlocked, unlock } = usePostContent(serviceObjectId, post, isOwnProfile);
 
     const isPublic = post.requiredTier === 0;
     const dateStr = new Date(post.createdAtMs).toLocaleDateString('en-US', {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { findActiveServiceId } from '@/lib/service-lookup';
+import { getWalrusImageUrl } from '@/lib/walrus';
 import type { Creator, Tier } from '@/types';
 
 /**
@@ -38,9 +39,11 @@ function parseServiceToCreator(
         address: creatorAddress,
         name: fields.name || 'Creator',
         bio: fields.description || '',
-        avatarBlobId: null,
+        avatarBlobId: fields.avatar_blob_id
+            ? getWalrusImageUrl(fields.avatar_blob_id)
+            : null,
         bannerBlobId: null,
-        suinsName: null,
+        suinsName: fields.suins_name?.fields?.vec?.[0] ?? null,
         totalSubscribers: 0,
         totalContent: (fields.posts || []).length,
         tiers,

@@ -44,7 +44,8 @@ interface UsePostContentResult {
  */
 export function usePostContent(
     serviceObjectId: string | null,
-    post: OnChainPost | null
+    post: OnChainPost | null,
+    isOwnProfile: boolean = false
 ): UsePostContentResult {
     const [metadata, setMetadata] = useState<PostMetadata | null>(null);
     const [images, setImages] = useState<DecryptedImage[]>([]);
@@ -73,6 +74,15 @@ export function usePostContent(
         // Only re-run when the specific post or service changes (not on every render)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [post?.postId, serviceObjectId]);
+
+    // Auto-unlock encrypted posts for the creator (they have max tier access on-chain)
+    useEffect(() => {
+        if (!post || !serviceObjectId) return;
+        if (isOwnProfile && post.requiredTier > 0 && !isUnlocked && !isLoading && !error) {
+            unlock();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [post?.postId, serviceObjectId, isOwnProfile]);
 
     /**
      * Load public (unencrypted) post content directly from Walrus.

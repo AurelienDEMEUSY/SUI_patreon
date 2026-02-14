@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
-import { buildCreateProfile } from '@/lib/contract';
+import { buildCreateProfile, buildSetSuinsName } from '@/lib/contract';
 import { findActiveServiceId } from '@/lib/service-lookup';
 import { useSponsoredTransaction } from '@/enoki/sponsor';
 
@@ -41,6 +41,7 @@ export function useAutoRegister() {
             setError(null);
 
             try {
+                // Step 1: Create the profile on-chain
                 const tx = buildCreateProfile(name, description);
                 const result = await sponsorAndExecute(tx);
 
@@ -53,13 +54,46 @@ export function useAutoRegister() {
                     (c) => c.type === 'created' && c.objectType?.includes('::service::Service'),
                 );
 
-                if (created && 'objectId' in created) {
-                    setServiceObjectId(created.objectId);
-                    setNeedsRegistration(false);
-                    return created.objectId;
+                if (!created || !('objectId' in created)) {
+                    throw new Error('Service object not found in transaction result');
                 }
 
-                throw new Error('Service object not found in transaction result');
+                const newServiceId = created.objectId;
+                setServiceObjectId(newServiceId);
+                setNeedsRegistration(false);
+
+                // Step 2: Create the node subname on SuiNS (server-side, admin signs)
+                try {
+                    const suinsRes = await fetch('/api/suins/create-subname', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ creatorAddress: currentAccount.address }),
+                    });
+
+                    if (suinsRes.ok) {
+                        const { suinsName } = await suinsRes.json();
+
+                        // Step 3: Record the subname in the contract (creator signs)
+                        if (suinsName) {
+                            try {
+                                const setSuinsTx = buildSetSuinsName(newServiceId, suinsName);
+                                const suinsResult = await sponsorAndExecute(setSuinsTx);
+                                await suiClient.waitForTransaction({ digest: suinsResult.digest });
+                            } catch (suinsErr) {
+                                // Non-blocking: leaf exists on SuiNS even if contract link fails
+                                console.warn('[useAutoRegister] set_suins_name failed:', suinsErr);
+                            }
+                        }
+                    } else {
+                        const errBody = await suinsRes.json().catch(() => ({}));
+                        console.warn('[useAutoRegister] create-subname API error:', errBody.error);
+                    }
+                } catch (suinsErr) {
+                    // Non-blocking: profile creation succeeded regardless
+                    console.warn('[useAutoRegister] SuiNS subname creation skipped:', suinsErr);
+                }
+
+                return newServiceId;
             } catch (err) {
                 const message = err instanceof Error ? err.message : 'Registration failed';
 
