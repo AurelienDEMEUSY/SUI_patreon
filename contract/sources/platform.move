@@ -102,6 +102,10 @@ public(package) fun register_creator(platform: &mut Platform, creator: address, 
     platform.creators.add(creator, service_id);
 }
 
+public(package) fun unregister_creator(platform: &mut Platform, creator: address) {
+    platform.creators.remove(creator);
+}
+
 public(package) fun get_fee_bps(platform: &Platform): u64 {
     platform.platform_fee_bps
 }

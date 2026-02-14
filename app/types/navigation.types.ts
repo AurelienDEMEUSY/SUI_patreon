@@ -9,6 +9,8 @@ export interface NavItem {
 
 export interface SidebarProps {
   className?: string;
+  isCreator?: boolean;
+  onBecomeCreator?: () => void;
 }
 
 export interface SidebarItemProps {

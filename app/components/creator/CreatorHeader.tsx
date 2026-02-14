@@ -1,7 +1,6 @@
 'use client';
 
 import { Creator } from '@/types';
-import Image from 'next/image';
 
 interface CreatorHeaderProps {
     creator: Creator;
@@ -9,10 +8,11 @@ interface CreatorHeaderProps {
 
 export function CreatorHeader({ creator }: CreatorHeaderProps) {
     return (
-        <div className="relative mb-20">
-            {/* Banner */}
-            <div className="w-full h-64 md:h-80 relative overflow-hidden rounded-b-[3rem]">
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10" />
+        <div className="relative mb-6">
+            {/* Banner — Cinematic */}
+            <div className="w-full h-56 md:h-72 lg:h-80 relative overflow-hidden rounded-3xl">
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#3c3cf6]/20 via-transparent to-purple-600/15 z-10" />
                 <img
                     src={creator.bannerBlobId || "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2670&auto=format&fit=crop"}
                     alt={`${creator.name} banner`}
@@ -20,49 +20,64 @@ export function CreatorHeader({ creator }: CreatorHeaderProps) {
                 />
             </div>
 
-            {/* Profile Info Overlay */}
-            <div className="absolute -bottom-16 left-0 right-0 px-6 md:px-12 flex flex-col md:flex-row items-end md:items-end gap-6 z-20">
-                {/* Avatar */}
-                <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-br from-[#3c3cf6] to-purple-600 rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000"></div>
-                    <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden border-4 border-black bg-black">
-                        <img
-                            src={creator.avatarBlobId || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1000&auto=format&fit=crop"}
-                            alt={creator.name}
-                            className="w-full h-full object-cover"
-                        />
-                    </div>
-                </div>
-
-                {/* Text Info */}
-                <div className="flex-1 mb-2">
-                    <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight">{creator.name}</h1>
-                        <span className="material-symbols-outlined text-[#3c3cf6] filled text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                    </div>
-                    <p className="text-gray-400 text-lg md:text-xl max-w-2xl font-medium leading-relaxed">
-                        {creator.bio}
-                    </p>
-                    {creator.suinsName && (
-                        <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
-                            <span className="w-2 h-2 rounded-full bg-[#3c3cf6] animate-pulse"></span>
-                            <span className="text-sm font-mono text-[#3c3cf6]">{creator.suinsName}</span>
+            {/* Profile Section — Overlapping Banner */}
+            <div className="relative -mt-24 px-6 md:px-10 z-20">
+                <div className="flex flex-col md:flex-row md:items-end gap-5">
+                    {/* Avatar with Glow Ring */}
+                    <div className="shrink-0">
+                        <div className="w-32 h-32 md:w-36 md:h-36 rounded-2xl overflow-hidden profile-glow-ring bg-black">
+                            <img
+                                src={creator.avatarBlobId || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1000&auto=format&fit=crop"}
+                                alt={creator.name}
+                                className="w-full h-full object-cover"
+                            />
                         </div>
-                    )}
-                </div>
+                    </div>
 
-                {/* Actions */}
-                <div className="flex gap-3 mb-4 w-full md:w-auto">
-                    <button className="flex-1 md:flex-none h-12 px-6 bg-[#3c3cf6] hover:bg-[#3c3cf6]/90 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_-5px_rgba(60,60,246,0.5)] active:scale-95 flex items-center justify-center gap-2">
-                        <span className="material-symbols-outlined">favorite</span>
-                        Follow
-                    </button>
-                    <button className="h-12 w-12 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all flex items-center justify-center">
-                        <span className="material-symbols-outlined">share</span>
-                    </button>
-                    <button className="h-12 w-12 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all flex items-center justify-center">
-                        <span className="material-symbols-outlined">more_horiz</span>
-                    </button>
+                    {/* Info + Actions */}
+                    <div className="flex-1 flex flex-col md:flex-row md:items-end md:justify-between gap-4 pb-1">
+                        {/* Text Info */}
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2.5 mb-1.5">
+                                <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight truncate">
+                                    {creator.name}
+                                </h1>
+                                <span
+                                    className="material-symbols-outlined text-[#3c3cf6] text-xl md:text-2xl shrink-0"
+                                    style={{ fontVariationSettings: "'FILL' 1" }}
+                                >
+                                    verified
+                                </span>
+                            </div>
+                            <p className="text-gray-400 text-sm md:text-base max-w-xl leading-relaxed line-clamp-2 mb-2">
+                                {creator.bio}
+                            </p>
+                            {creator.suinsName && (
+                                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#3c3cf6]/10 rounded-full border border-[#3c3cf6]/20">
+                                    <span className="w-2 h-2 rounded-full bg-[#3c3cf6] animate-pulse" />
+                                    <span className="text-sm font-semibold text-[#3c3cf6]">{creator.suinsName}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2.5 shrink-0">
+                            <button className="h-11 px-7 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] hover:from-[#4f4ff8] hover:to-[#7c7ff9] text-white font-bold rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(60,60,246,0.5)] hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.7)] active:scale-95 flex items-center justify-center gap-2 text-sm">
+                                <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>loyalty</span>
+                                Subscribe
+                            </button>
+                            <button className="h-11 px-5 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 text-sm active:scale-95">
+                                <span className="material-symbols-outlined text-lg">favorite</span>
+                                Follow
+                            </button>
+                            <button className="h-11 w-11 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 hover:border-white/20 transition-all flex items-center justify-center active:scale-95">
+                                <span className="material-symbols-outlined text-lg">share</span>
+                            </button>
+                            <button className="h-11 w-11 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 hover:border-white/20 transition-all flex items-center justify-center active:scale-95">
+                                <span className="material-symbols-outlined text-lg">more_horiz</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

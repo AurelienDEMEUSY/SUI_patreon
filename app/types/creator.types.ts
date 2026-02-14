@@ -9,6 +9,7 @@ export interface Creator {
   totalContent: number;
   tiers: Tier[];
   createdAt: number;
+  serviceObjectId?: string;
 }
 
 export interface Tier {

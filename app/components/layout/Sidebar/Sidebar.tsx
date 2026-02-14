@@ -9,7 +9,7 @@ import { Dropdown, DropdownContent, DropdownItem, DropdownSeparator, DropdownTri
 import { useUiStore } from '@/stores';
 import type { SidebarProps } from '@/types';
 
-export function Sidebar({ className = '' }: SidebarProps) {
+export function Sidebar({ className = '', isCreator = false, onBecomeCreator }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const account = useCurrentAccount();
@@ -20,9 +20,8 @@ export function Sidebar({ className = '' }: SidebarProps) {
 
   return (
     <aside
-      className={`glass-panel flex flex-col py-8 rounded-2xl shrink-0 transition-all duration-300 ease-in-out ${
-        sidebarCollapsed ? 'w-20 px-2' : 'w-64 px-4'
-      } ${className}`}
+      className={`glass-panel flex flex-col py-8 rounded-2xl shrink-0 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-20 px-2' : 'w-64 px-4'
+        } ${className}`}
     >
       {/* Logo + Toggle */}
       <div className="flex items-center mb-10 text-white relative w-full">
@@ -39,7 +38,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
           </div>
         ) : (
           // Expanded: toggle button + star logo + text
-          <div className="flex items-center gap-3 w-full px-2">
+          <div className="flex items-center gap-3 w-full justify-between px-2">
             <button
               onClick={toggleSidebar}
               className="text-white/60 hover:text-white transition-colors"
@@ -47,8 +46,11 @@ export function Sidebar({ className = '' }: SidebarProps) {
             >
               <PanelLeftClose size={20} />
             </button>
-            <div className="size-8 bg-[#3c3cf6] rounded-lg flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-white font-bold">star</span>
+            <div className="flex items-center gap-2">
+              <h1 className='font-bold text-xl'>Patreon</h1>
+              <div className="size-8 bg-[#3c3cf6] rounded-lg flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-white font-bold">star</span>
+              </div>
             </div>
           </div>
         )}
@@ -65,24 +67,37 @@ export function Sidebar({ className = '' }: SidebarProps) {
         ))}
       </nav>
 
+      {/* Become a Creator CTA */}
+      {!isCreator && onBecomeCreator && (
+        <div className="w-full mb-4">
+          <button
+            onClick={onBecomeCreator}
+            className={`w-full flex items-center rounded-xl bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] text-white text-sm font-bold hover:shadow-[0_0_30px_-5px_rgba(60,60,246,0.5)] transition-all duration-300 active:scale-[0.98] ${sidebarCollapsed ? 'justify-center p-3' : 'justify-start gap-3 px-4 py-3'
+              }`}
+          >
+            <span className="material-symbols-outlined text-lg">add_circle</span>
+            {!sidebarCollapsed && <span>Become a Creator</span>}
+          </button>
+        </div>
+      )}
+
       {/* User Profile */}
       <div className="mt-auto w-full">
         <Dropdown>
           <DropdownTrigger>
-            <div className={`glass-card rounded-xl flex items-center w-full cursor-pointer hover:bg-white/10 transition-colors ${
-              sidebarCollapsed ? 'p-2 justify-center' : 'p-3 gap-3'
-            }`}>
+            <div className={`glass-card rounded-xl flex items-center w-full cursor-pointer hover:bg-white/10 transition-colors ${sidebarCollapsed ? 'p-2 justify-center' : 'p-3 gap-3'
+              }`}>
               <img
                 alt="User Profile"
-                className={`rounded-lg object-cover shrink-0 ${
-                  sidebarCollapsed ? 'size-10' : 'size-10'
-                }`}
+                className="rounded-lg object-cover shrink-0 size-10"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyuUEAbfXP2Q_hrE8xf0N_pNHv0Ufy1HRdVWxPIx0yf8gUkE4sFPYz27abpMKRQkx7HekBr6Tx1TiLyasPI9M6T3Ucrp9rGk4nQWPhevyQ-05_bk1cfm8gowxKoFGw-_MARvQZQNHh4Hj0EiumAJXCZQqx0aO9ppVpROdTrMpLs6Ji0TYsy6ztczgOT5Mdhca7FKiynkcQs3NGWuDCbzRwyeDrLVeKTp25NhTHIRbWmOAhapq9Jr2bpAYnBOWsa9i2h2rhIu5NIOUG"
               />
               {!sidebarCollapsed && (
                 <>
                   <div className="overflow-hidden flex-1 min-w-0 text-left">
-                    <p className="text-sm font-bold truncate">Alex Rivier</p>
+                    <p className="text-sm font-bold truncate">
+                      {isCreator ? 'Creator' : 'User'}
+                    </p>
                     <p className="text-xs text-white/40 truncate font-mono">
                       {`${account.address.slice(0, 6)}...${account.address.slice(-4)}`}
                     </p>

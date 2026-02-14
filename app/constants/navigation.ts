@@ -9,10 +9,10 @@ export const SIDEBAR_NAV: NavItem[] = [
     requiresAuth: false,
   },
   {
-    id: 'subscriptions',
-    label: 'My Subscriptions',
-    href: '/app/subscriptions',
-    icon: 'star',
+    id: 'library',
+    label: 'Library',
+    href: '/app/library',
+    icon: 'video_library',
     requiresAuth: true,
   },
   {
@@ -24,10 +24,10 @@ export const SIDEBAR_NAV: NavItem[] = [
     badge: 3,
   },
   {
-    id: 'creator-hub',
-    label: 'Creator Hub',
-    href: '/app/creator-hub',
-    icon: 'auto_awesome',
+    id: 'insights',
+    label: 'Insights',
+    href: '/app/insights',
+    icon: 'analytics',
     requiresAuth: true,
   },
   {
