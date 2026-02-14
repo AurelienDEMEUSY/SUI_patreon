@@ -362,7 +362,7 @@ fun test_crud_operations() {
         let mut service = scenario.take_shared<Service>();
 
         // Update Profile
-        service::update_creator_profile(&mut service, b"New Name".to_string(), b"New Desc".to_string(), scenario.ctx());
+        service::update_creator_profile(&mut service, b"New Name".to_string(), b"New Desc".to_string(), b"avatar123".to_string(), scenario.ctx());
         assert!(service::get_creator_name(&service) == b"New Name".to_string());
 
         // Create Post

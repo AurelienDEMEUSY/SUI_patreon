@@ -79,6 +79,8 @@ public struct Service has key {
     name: String,
     /// Description / bio
     description: String,
+    /// Avatar image blob ID on Walrus (public, not encrypted)
+    avatar_blob_id: String,
     /// Available subscription tiers
     tiers: vector<SubscriptionTier>,
     /// Published posts
@@ -111,6 +113,7 @@ entry fun create_creator_profile(
         creator: sender,
         name,
         description,
+        avatar_blob_id: std::string::utf8(b""),
         tiers: vector::empty(),
         posts: vector::empty(),
         next_post_id: 0,
@@ -141,6 +144,7 @@ entry fun delete_creator_profile(
         creator,
         name: _,
         description: _,
+        avatar_blob_id: _,
         tiers: _,
         posts: _,
         next_post_id: _,
@@ -174,6 +178,7 @@ entry fun update_creator_profile(
     service: &mut Service,
     name: String,
     description: String,
+    avatar_blob_id: String,
     ctx: &TxContext,
 ) {
     let sender = ctx.sender();
@@ -181,6 +186,7 @@ entry fun update_creator_profile(
 
     service.name = name;
     service.description = description;
+    service.avatar_blob_id = avatar_blob_id;
 
     event::emit(ProfileUpdated { creator: sender, name });
 }
@@ -448,6 +454,11 @@ entry fun seal_approve(
 
     let caller = ctx.sender();
 
+    // Creator always has access to their own content (max tier)
+    if (caller == service.creator) {
+        return
+    };
+
     assert!(service.subscribers.contains(caller), ENoAccess);
 
     let sub = &service.subscribers[caller];
@@ -502,6 +513,7 @@ public fun get_creator_revenue(service: &Service): u64 {
 
 public fun get_creator_name(service: &Service): String { service.name }
 public fun get_creator_description(service: &Service): String { service.description }
+public fun get_creator_avatar(service: &Service): String { service.avatar_blob_id }
 public fun get_service_creator(service: &Service): address { service.creator }
 
 // ============================================================
