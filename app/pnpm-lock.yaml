@@ -8,12 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@mysten/bcs':
+        specifier: ^2.0.2
+        version: 2.0.2
       '@mysten/dapp-kit':
         specifier: ^1.0.3
         version: 1.0.3(@mysten/sui@2.4.0(typescript@5.9.3))(@tanstack/react-query@5.90.21(react@19.2.3))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.3))
       '@mysten/enoki':
         specifier: ^1.0.3
         version: 1.0.3(@mysten/sui@2.4.0(typescript@5.9.3))(@types/react@19.2.14)(react@19.2.3)
+      '@mysten/seal':
+        specifier: ^1.0.1
+        version: 1.0.1(@mysten/sui@2.4.0(typescript@5.9.3))
       '@mysten/sui':
         specifier: ^2.4.0
         version: 2.4.0(typescript@5.9.3)
@@ -53,6 +59,9 @@ importers:
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
+      zustand:
+        specifier: ^5.0.11
+        version: 5.0.11(@types/react@19.2.14)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4
@@ -614,6 +623,11 @@ packages:
 
   '@mysten/ledgerjs-hw-app-sui@0.7.1':
     resolution: {integrity: sha512-2KfPyTzdIeSq4auepS56T09rPE2dHz2VX3G9rFnYjayzynJtNd9tzKWPRpjpCEdBGjp8wg0kEzAeHSOwB0P/Kg==}
+
+  '@mysten/seal@1.0.1':
+    resolution: {integrity: sha512-7dWlJvqb5jbdq1DLwHw080/PNOat9K9Z/vGR5LqiywXA1Zdky0gvhPGm/KFSoON2qFP3YRwK1ar4olAC8EAddQ==}
+    peerDependencies:
+      '@mysten/sui': ^2.3.2
 
   '@mysten/signers@1.0.1':
     resolution: {integrity: sha512-R23Q5Nm4z4ydmGSbTcS9omw2pPA522WVwkOHiF+n0NJMm/icNlMmM7rTPzA0I6LkUDx1WE+ScEfF9knuAgc/1A==}
@@ -4840,6 +4854,13 @@ snapshots:
       - supports-color
 
   '@mysten/ledgerjs-hw-app-sui@0.7.1': {}
+
+  '@mysten/seal@1.0.1(@mysten/sui@2.4.0(typescript@5.9.3))':
+    dependencies:
+      '@mysten/bcs': 2.0.2
+      '@mysten/sui': 2.4.0(typescript@5.9.3)
+      '@noble/curves': 2.0.1
+      '@noble/hashes': 2.0.1
 
   '@mysten/signers@1.0.1(@mysten/sui@2.4.0(typescript@5.9.3))':
     dependencies:
