@@ -11,22 +11,6 @@ import {
 } from "@/lib/contract-constants";
 import { findActiveServiceId } from "@/lib/service-lookup";
 
-// ============================================================
-// POST /api/suins/create-subname
-// ============================================================
-// Protected route: creates a **node** subname `<pseudo>.patreon.sui`
-// as a real SubDomainRegistration NFT transferred to the creator.
-//
-// Body: { creatorAddress: string }
-//
-// Security checks:
-//   1. creatorAddress must own an active Service on the platform
-//   2. The Service.name is used to derive the subname (no client override)
-//   3. The subname must not already exist on SuiNS
-//   4. The Service.suins_name must not already be set (no duplicates)
-// ============================================================
-
-/** Lazy singleton clients — initialised once per cold start. */
 let suiClient: SuiJsonRpcClient | null = null;
 let suinsClient: SuinsClient | null = null;
 
@@ -57,20 +41,14 @@ function getAdminKeypair(): Ed25519Keypair {
             "SUINS_ADMIN_SECRET_KEY is not set. Add it to your .env.local."
         );
     }
-    // Accepts both base64 (`suiprivkey1…`) and raw base64 formats
     return Ed25519Keypair.fromSecretKey(secret);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getServiceFields(serviceObject: any): any {
     if (serviceObject?.data?.content?.dataType !== "moveObject") return null;
     return serviceObject.data.content.fields;
 }
 
-/**
- * Fetch the expiration timestamp of the parent NFT (patreon.sui).
- * Node subnames must expire ≤ parent expiration.
- */
 async function getParentExpiration(client: SuiJsonRpcClient): Promise<string> {
     const parentObj = await client.getObject({
         id: SUINS_PARENT_NFT_ID,
@@ -80,7 +58,6 @@ async function getParentExpiration(client: SuiJsonRpcClient): Promise<string> {
     if (fields?.dataType !== "moveObject") {
         throw new Error("Failed to read parent NFT object");
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const expirationMs = (fields.fields as any)?.expiration_timestamp_ms;
     if (!expirationMs) {
         throw new Error("Parent NFT has no expiration_timestamp_ms");
@@ -89,9 +66,6 @@ async function getParentExpiration(client: SuiJsonRpcClient): Promise<string> {
 }
 
 export async function POST(request: Request) {
-    // ----------------------------------------------------------------
-    // 1. Parse & validate request body
-    // ----------------------------------------------------------------
     let body: { creatorAddress: string };
     try {
         body = await request.json();
@@ -113,9 +87,6 @@ export async function POST(request: Request) {
     try {
         const client = getSuiClient();
 
-        // ----------------------------------------------------------------
-        // 2. Verify the creator has an active Service on the platform
-        // ----------------------------------------------------------------
         const serviceObjectId = await findActiveServiceId(client, creatorAddress);
         if (!serviceObjectId) {
             return NextResponse.json(
@@ -124,9 +95,6 @@ export async function POST(request: Request) {
             );
         }
 
-        // ----------------------------------------------------------------
-        // 3. Fetch the Service object to read the creator's name
-        // ----------------------------------------------------------------
         const serviceObject = await client.getObject({
             id: serviceObjectId,
             options: { showContent: true },
@@ -140,7 +108,6 @@ export async function POST(request: Request) {
             );
         }
 
-        // Guard: ensure the on-chain creator matches the request
         if (fields.creator !== creatorAddress) {
             return NextResponse.json(
                 { error: "Creator address mismatch" },
@@ -148,7 +115,6 @@ export async function POST(request: Request) {
             );
         }
 
-        // Guard: if suins_name is already set, the subname exists
         const existingSuins = fields.suins_name?.fields?.vec?.[0];
         if (existingSuins) {
             return NextResponse.json(
@@ -160,9 +126,6 @@ export async function POST(request: Request) {
             );
         }
 
-        // ----------------------------------------------------------------
-        // 4. Derive the subname from the Service.name
-        // ----------------------------------------------------------------
         const creatorName: string = fields.name;
         if (!creatorName || creatorName.trim().length === 0) {
             return NextResponse.json(
@@ -171,7 +134,6 @@ export async function POST(request: Request) {
             );
         }
 
-        // Normalise: lowercase, trim, replace spaces with hyphens
         const normalisedName = creatorName
             .toLowerCase()
             .trim()
@@ -187,22 +149,14 @@ export async function POST(request: Request) {
 
         const fullSubname = `${normalisedName}.${SUINS_PARENT_NAME}`;
 
-        // ----------------------------------------------------------------
-        // 5. Check the subname isn't already registered on SuiNS
-        // ----------------------------------------------------------------
         const suins = getSuinsClient();
         let alreadyExistsOnSuins = false;
         try {
             const existing = await suins.getNameRecord(fullSubname);
             if (existing) {
-                // Subname exists on SuiNS but the Service has no suins_name linked
-                // (checked in step 3 above). This means a previous attempt created
-                // the node subname but the contract link failed. Return success so
-                // the frontend can proceed with set_suins_name.
                 alreadyExistsOnSuins = true;
             }
         } catch {
-            // getNameRecord throws if not found — that's what we want
         }
 
         if (alreadyExistsOnSuins) {
@@ -215,16 +169,7 @@ export async function POST(request: Request) {
             });
         }
 
-        // ----------------------------------------------------------------
-        // 6. Get the parent NFT expiration (node subnames must expire ≤ parent)
-        // ----------------------------------------------------------------
         const parentExpirationMs = await getParentExpiration(client);
-
-        // ----------------------------------------------------------------
-        // 7. Build + sign + execute the node subname creation transaction.
-        //    Creates a SubDomainRegistration NFT and transfers it
-        //    to the creator — they truly own the name.
-        // ----------------------------------------------------------------
         const adminKeypair = getAdminKeypair();
         const tx = new Transaction();
         const suinsTx = new SuinsTransaction(suins, tx);
@@ -237,14 +182,12 @@ export async function POST(request: Request) {
             allowTimeExtension: true,
         });
 
-        // Set the target address BEFORE transferring (NFT is consumed by transfer)
         suinsTx.setTargetAddress({
             nft: subNameNft,
             address: creatorAddress,
             isSubname: true,
         });
 
-        // Transfer the SubDomainRegistration NFT to the creator
         tx.transferObjects([subNameNft], tx.pure.address(creatorAddress));
 
         tx.setSender(adminKeypair.toSuiAddress());
@@ -256,11 +199,6 @@ export async function POST(request: Request) {
         });
 
         await client.waitForTransaction({ digest: result.digest });
-
-        // ----------------------------------------------------------------
-        // 8. Return the subname so the frontend can call set_suins_name()
-        //    client-side to link it to the Service object.
-        // ----------------------------------------------------------------
 
         return NextResponse.json({
             success: true,

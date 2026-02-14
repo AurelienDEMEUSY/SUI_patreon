@@ -10,7 +10,6 @@ export default function LoginPage() {
   const account = useCurrentAccount();
   const router = useRouter();
 
-  // If already connected, redirect to app
   useEffect(() => {
     if (account) {
       router.replace('/app');
