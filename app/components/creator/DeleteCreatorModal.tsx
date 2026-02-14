@@ -34,13 +34,13 @@ export function DeleteCreatorModal({
             {/* Modal */}
             <div className="relative w-full max-w-lg rounded-3xl overflow-hidden">
                 {/* Gradient border effect — red for danger */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-500/50 via-red-600/30 to-orange-500/20 p-[1px]">
+                <div className="absolute inset-0 rounded-3xl bg-linear-to-br from-red-500/50 via-red-600/30 to-orange-500/20 p-px">
                     <div className="w-full h-full rounded-3xl bg-[#0e0e1a]" />
                 </div>
 
                 <div className="relative p-8 md:p-10">
                     {/* Icon */}
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(239,68,68,0.5)]">
+                    <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-red-500 to-red-700 flex items-center justify-center mb-6 shadow-[0_0_40px_-10px_rgba(239,68,68,0.5)]">
                         <span
                             className="material-symbols-outlined text-3xl text-white"
                             style={{ fontVariationSettings: "'FILL' 1" }}
@@ -59,13 +59,13 @@ export function DeleteCreatorModal({
 
                     {/* Info cards */}
                     <div className="space-y-3 mb-6">
-                        <div className="flex items-start gap-3 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
+                        <div className="flex items-start gap-3 bg-white/3 border border-white/6 rounded-xl px-4 py-3">
                             <span className="material-symbols-outlined text-emerald-400 text-lg mt-0.5">account_balance_wallet</span>
                             <p className="text-xs text-gray-400 leading-relaxed">
                                 Any remaining <span className="text-white font-semibold">revenue balance</span> will be transferred back to your wallet.
                             </p>
                         </div>
-                        <div className="flex items-start gap-3 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
+                        <div className="flex items-start gap-3 bg-white/3 border border-white/6 rounded-xl px-4 py-3">
                             <span className="material-symbols-outlined text-amber-400 text-lg mt-0.5">group_off</span>
                             <p className="text-xs text-gray-400 leading-relaxed">
                                 You must have <span className="text-white font-semibold">no active subscribers</span>. If you do, wait for their subscriptions to expire first.
@@ -84,7 +84,7 @@ export function DeleteCreatorModal({
                             onChange={(e) => setConfirmText(e.target.value)}
                             placeholder={creatorName}
                             disabled={isLoading}
-                            className="w-full bg-white/[0.04] border border-red-500/20 rounded-xl px-4 py-3.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all text-sm font-medium"
+                            className="w-full bg-white/4 border border-red-500/20 rounded-xl px-4 py-3.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all text-sm font-medium"
                         />
                     </div>
 
@@ -101,14 +101,14 @@ export function DeleteCreatorModal({
                         <button
                             onClick={onClose}
                             disabled={isLoading}
-                            className="flex-1 h-13 bg-white/[0.05] hover:bg-white/[0.08] text-white font-bold rounded-xl transition-all duration-300 text-sm py-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 h-13 bg-white/5 hover:bg-white/8 text-white font-bold rounded-xl transition-all duration-300 text-sm py-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={onConfirm}
                             disabled={isLoading || !isConfirmed}
-                            className="flex-1 h-13 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm shadow-[0_0_30px_-5px_rgba(239,68,68,0.4)] hover:shadow-[0_0_40px_-5px_rgba(239,68,68,0.6)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed py-3.5"
+                            className="flex-1 h-13 bg-linear-to-r from-red-600 to-red-700 text-white font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm shadow-[0_0_30px_-5px_rgba(239,68,68,0.4)] hover:shadow-[0_0_40px_-5px_rgba(239,68,68,0.6)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed py-3.5"
                         >
                             {isLoading ? (
                                 <>

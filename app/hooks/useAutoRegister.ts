@@ -82,7 +82,7 @@ export function useAutoRegister() {
         [currentAccount, sponsorAndExecute, suiClient],
     );
 
-    // Check on wallet connect — only detect, don't auto-create
+    // On wallet connect: detect existing profile (don't auto-create)
     useEffect(() => {
         if (!currentAccount?.address) {
             setServiceObjectId(null);
