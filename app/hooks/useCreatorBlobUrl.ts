@@ -24,7 +24,7 @@ function looksLikeImageBytes(bytes: Uint8Array): boolean {
 }
 
 function bytesToObjectUrl(bytes: Uint8Array, mimeType: string = 'image/jpeg'): string {
-    const blob = new Blob([bytes], { type: mimeType });
+    const blob = new Blob([bytes as unknown as BlobPart], { type: mimeType });
     return URL.createObjectURL(blob);
 }
 

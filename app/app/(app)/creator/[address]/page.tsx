@@ -171,6 +171,7 @@ export default function CreatorProfilePage() {
                                         serviceObjectId={serviceObjectId || ''}
                                         isOwnProfile={isOwnProfile}
                                         isLoading={postsLoading}
+                                        creatorAddress={creator.address}
                                     />
                                 </div>
                             )}

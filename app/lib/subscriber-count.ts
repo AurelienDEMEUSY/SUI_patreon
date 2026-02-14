@@ -1,4 +1,4 @@
-import type { SuiClient } from '@mysten/sui/client';
+import type { SuiJsonRpcClient as SuiClient } from '@mysten/sui/jsonRpc';
 
 /** Optional pre-fetched Service object fields (to avoid a second getObject). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,7 +20,7 @@ export async function getSubscriberCount(
     serviceObjectId: string,
     existingFields?: ServiceFields | null,
 ): Promise<number> {
-    let fields: ServiceFields | undefined = existingFields;
+    let fields: ServiceFields | undefined = existingFields ?? undefined;
 
     if (fields === undefined || fields === null) {
         const serviceObj = await suiClient.getObject({

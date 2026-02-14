@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
+import { useQueryClient } from '@tanstack/react-query';
 import { buildCreateProfile, buildSetSuinsName } from '@/lib/contract';
 import { findActiveServiceId } from '@/lib/service-lookup';
 import { useSponsoredTransaction } from '@/enoki/sponsor';
+import { queryKeys } from '@/constants/query-keys';
 
 /**
  * Auto-registration hook.
@@ -20,6 +22,7 @@ export function useAutoRegister() {
     const currentAccount = useCurrentAccount();
     const suiClient = useSuiClient();
     const { sponsorAndExecute } = useSponsoredTransaction();
+    const queryClient = useQueryClient();
 
     const [serviceObjectId, setServiceObjectId] = useState<string | null>(null);
     const [needsRegistration, setNeedsRegistration] = useState(false);
@@ -111,6 +114,11 @@ export function useAutoRegister() {
                 return null;
             } finally {
                 setIsRegistering(false);
+                // Invalidate queries after registration attempt
+                queryClient.invalidateQueries({ queryKey: queryKeys.allCreators() });
+                if (currentAccount.address) {
+                    queryClient.invalidateQueries({ queryKey: queryKeys.creator(currentAccount.address) });
+                }
             }
         },
         [currentAccount, sponsorAndExecute, suiClient],

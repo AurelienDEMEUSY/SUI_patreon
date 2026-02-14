@@ -2,8 +2,10 @@
 
 import { useState, useCallback } from 'react';
 import { useSuiClient, useCurrentAccount } from '@mysten/dapp-kit';
+import { useQueryClient } from '@tanstack/react-query';
 import { buildDeleteProfile } from '@/lib/contract';
 import { useSponsoredTransaction } from '@/enoki/sponsor';
+import { queryKeys } from '@/constants/query-keys';
 
 interface UseDeleteCreatorResult {
     /** Delete the creator profile on-chain */
@@ -33,6 +35,7 @@ export function useDeleteCreator(): UseDeleteCreatorResult {
     const currentAccount = useCurrentAccount();
     const { sponsorAndExecute } = useSponsoredTransaction();
     const suiClient = useSuiClient();
+    const queryClient = useQueryClient();
 
     const deleteCreator = useCallback(async (
         serviceObjectId: string,
@@ -57,6 +60,10 @@ export function useDeleteCreator(): UseDeleteCreatorResult {
             });
 
             setIsSuccess(true);
+            queryClient.invalidateQueries({ queryKey: queryKeys.allCreators() });
+            if (currentAccount.address) {
+                queryClient.invalidateQueries({ queryKey: queryKeys.creator(currentAccount.address) });
+            }
             return true;
         } catch (err) {
             let message = err instanceof Error ? err.message : 'Profile deletion failed';

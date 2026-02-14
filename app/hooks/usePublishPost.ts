@@ -2,7 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
+import { useQueryClient } from '@tanstack/react-query';
 import { useExecuteTransaction } from '@/hooks/useExecuteTransaction';
+import { queryKeys } from '@/constants/query-keys';
 import { encryptContent } from '@/lib/seal';
 import { uploadEncryptedContent, uploadToWalrus } from '@/lib/walrus';
 import { buildPublishPost } from '@/lib/contract';
@@ -74,6 +76,7 @@ export function usePublishPost(serviceObjectId: string | null): UsePublishPostRe
     const currentAccount = useCurrentAccount();
     const suiClient = useSuiClient();
     const { executeTransaction } = useExecuteTransaction();
+    const queryClient = useQueryClient();
 
     const reset = useCallback(() => {
         setProgress(INITIAL_PROGRESS);
@@ -193,8 +196,12 @@ export function usePublishPost(serviceObjectId: string | null): UsePublishPostRe
 
             await executeTransaction(tx);
 
-            // ── Done ──
+            // ── Done ── Invalidate caches
             setProgress(makeProgress('done', 100, 'Post published!'));
+            queryClient.invalidateQueries({ queryKey: queryKeys.creatorPosts(serviceObjectId) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.latestPosts(12, true) });
+            queryClient.invalidateQueries({ queryKey: queryKeys.latestPost() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.creator(currentAccount.address) });
             return postId;
         } catch (err) {
             const errMsg = err instanceof Error ? err.message : 'Publishing failed';

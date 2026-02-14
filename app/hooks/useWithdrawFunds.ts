@@ -2,8 +2,10 @@
 
 import { useState, useCallback } from 'react';
 import { useSuiClient, useCurrentAccount } from '@mysten/dapp-kit';
+import { useQueryClient } from '@tanstack/react-query';
 import { buildWithdrawRevenue } from '@/lib/contract';
 import { useExecuteTransaction } from './useExecuteTransaction';
+import { queryKeys } from '@/constants/query-keys';
 
 interface UseWithdrawFundsResult {
     /** Withdraw all accumulated revenue from the Service */
@@ -31,6 +33,7 @@ export function useWithdrawFunds(): UseWithdrawFundsResult {
     const currentAccount = useCurrentAccount();
     const { executeTransaction } = useExecuteTransaction();
     const suiClient = useSuiClient();
+    const queryClient = useQueryClient();
 
     const withdrawFunds = useCallback(async (
         serviceObjectId: string,
@@ -53,6 +56,9 @@ export function useWithdrawFunds(): UseWithdrawFundsResult {
             });
 
             setIsSuccess(true);
+            if (serviceObjectId) {
+                queryClient.invalidateQueries({ queryKey: queryKeys.creatorRevenue(serviceObjectId) });
+            }
             return true;
         } catch (err) {
             let message = err instanceof Error ? err.message : 'Withdrawal failed';

@@ -3,6 +3,8 @@
 import type { OnChainPost } from '@/types/post.types';
 import { usePostContent } from '@/hooks/usePostContent';
 import { PostImageGallery } from './PostImageGallery';
+import { PostReactions } from './PostReactions';
+import { CommentSection } from './CommentSection';
 import { WALRUS_AGGREGATOR_URL } from '@/lib/contract-constants';
 
 // ============================================================
@@ -13,9 +15,10 @@ interface PostCardProps {
     post: OnChainPost;
     serviceObjectId: string;
     isOwnProfile?: boolean;
+    creatorAddress?: string;
 }
 
-export function PostCard({ post, serviceObjectId, isOwnProfile }: PostCardProps) {
+export function PostCard({ post, serviceObjectId, isOwnProfile, creatorAddress }: PostCardProps) {
     const { metadata, images, isLoading, error, isUnlocked, unlock } = usePostContent(serviceObjectId, post, isOwnProfile);
 
     const isPublic = post.requiredTier === 0;
@@ -136,7 +139,17 @@ export function PostCard({ post, serviceObjectId, isOwnProfile }: PostCardProps)
             )}
 
             {/* Footer */}
-            <div className="px-5 pb-4 pt-1 border-t border-white/[0.04] space-y-2">
+            <div className="px-5 pb-4 pt-1 border-t border-white/[0.04] space-y-3">
+                {/* Reactions */}
+                <div className="flex items-center justify-between pt-2">
+                    <PostReactions post={post} serviceObjectId={serviceObjectId} />
+                    <span className="flex items-center gap-1 text-gray-500 text-xs font-semibold">
+                        <span className="material-symbols-outlined text-xs">chat_bubble</span>
+                        {post.comments.length}
+                    </span>
+                </div>
+
+                {/* Info row */}
                 <div className="flex items-center gap-4 text-gray-600 text-xs font-semibold">
                     <span className="flex items-center gap-1 text-gray-500">
                         <span className="material-symbols-outlined text-xs">description</span>
@@ -196,6 +209,15 @@ export function PostCard({ post, serviceObjectId, isOwnProfile }: PostCardProps)
                             </button>
                         </div>
                     )}
+                </div>
+
+                {/* Comments */}
+                <div className="pt-2 border-t border-white/[0.04]">
+                    <CommentSection
+                        post={post}
+                        serviceObjectId={serviceObjectId}
+                        creatorAddress={creatorAddress}
+                    />
                 </div>
             </div>
         </div>

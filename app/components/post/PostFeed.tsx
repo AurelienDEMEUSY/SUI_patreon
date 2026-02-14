@@ -12,9 +12,10 @@ interface PostFeedProps {
     serviceObjectId: string;
     isOwnProfile?: boolean;
     isLoading?: boolean;
+    creatorAddress?: string;
 }
 
-export function PostFeed({ posts, serviceObjectId, isOwnProfile, isLoading }: PostFeedProps) {
+export function PostFeed({ posts, serviceObjectId, isOwnProfile, isLoading, creatorAddress }: PostFeedProps) {
     if (isLoading) {
         return (
             <div className="space-y-5">
@@ -58,6 +59,7 @@ export function PostFeed({ posts, serviceObjectId, isOwnProfile, isLoading }: Po
                     post={post}
                     serviceObjectId={serviceObjectId}
                     isOwnProfile={isOwnProfile}
+                    creatorAddress={creatorAddress}
                 />
             ))}
         </div>

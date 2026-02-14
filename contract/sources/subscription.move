@@ -10,15 +10,9 @@ use sui::event;
 use contract::service::{Self, Service};
 use contract::platform::{Self, Platform};
 
-// ============================================================
-// Error codes
-// ============================================================
 const EInvalidTier: u64 = 1;
 const EInsufficientPayment: u64 = 2;
 
-// ============================================================
-// Events
-// ============================================================
 
 public struct SubscriptionPurchased has copy, drop {
     subscriber: address,
@@ -34,10 +28,6 @@ public struct SubscriptionRenewed has copy, drop {
     new_expires_at_ms: u64,
 }
 
-// ============================================================
-// Subscribe
-// ============================================================
-
 /// Subscribe to a creator by paying the tier price in SUI.
 /// After subscribing, the user can decrypt content encrypted with
 /// `id = bcs::to_bytes(&service_object_id)` via Seal.
@@ -52,14 +42,11 @@ entry fun subscribe(
 ) {
     let subscriber = ctx.sender();
 
-    // Find the tier
     let (found, tier_price, tier_duration) = service::find_tier_info(service, tier_level);
     assert!(found, EInvalidTier);
 
-    // Verify payment
     assert!(coin::value(&payment) >= tier_price, EInsufficientPayment);
 
-    // Refund excess payment
     let paid = coin::split(&mut payment, tier_price, ctx);
     if (coin::value(&payment) > 0) {
         transfer::public_transfer(payment, subscriber);
@@ -67,26 +54,21 @@ entry fun subscribe(
         coin::destroy_zero(payment);
     };
 
-    // Calculate platform fee
     let fee_amount = (tier_price * platform::get_fee_bps(platform)) / 10000;
 
-    // Split payment: fee goes to platform, rest to creator
     let mut payment_balance = coin::into_balance(paid);
     let fee_balance = balance::split(&mut payment_balance, fee_amount);
 
     platform::add_platform_fee(platform, fee_balance);
     service::add_revenue(service, payment_balance);
 
-    // Calculate expiry
     let now = clock.timestamp_ms();
     let expires_at_ms = now + tier_duration;
     let creator = service::get_creator(service);
 
-    // Add or update subscription
     if (service::has_subscriber(service, subscriber)) {
         let (_, old_expires) = service::get_subscriber_details(service, subscriber);
         if (old_expires > now) {
-            // Still active — extend from current expiry
             let new_expires = old_expires + tier_duration;
             service::set_subscriber(service, subscriber, tier_level, new_expires);
 
@@ -94,7 +76,6 @@ entry fun subscribe(
                 subscriber, creator, tier: tier_level, new_expires_at_ms: new_expires,
             });
         } else {
-            // Expired — start fresh from now
             service::set_subscriber(service, subscriber, tier_level, expires_at_ms);
 
             event::emit(SubscriptionPurchased {

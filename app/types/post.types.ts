@@ -23,6 +23,28 @@ export interface PostMetadata {
     images: PostImage[];
 }
 
+// ============================================================
+// On-chain comment representation
+// ============================================================
+
+/** A comment as read from the on-chain Post struct. */
+export interface OnChainComment {
+    /** Address of the comment author */
+    author: string;
+    /** Comment text content */
+    content: string;
+    /** Creation timestamp in milliseconds */
+    createdAtMs: number;
+}
+
+// ============================================================
+// On-chain post representation
+// ============================================================
+
+/**
+ * A post as read from the on-chain Service object.
+ * Maps directly to the Move `Post` struct fields.
+ */
 export interface OnChainPost {
     postId: number;
     title: string;
@@ -30,6 +52,14 @@ export interface OnChainPost {
     dataBlobId: string;
     requiredTier: number;
     createdAtMs: number;
+    /** Number of likes (thumbs up) */
+    likes: number;
+    /** Number of dislikes (thumbs down) */
+    dislikes: number;
+    /** Map of user address -> reaction (1=like, 2=dislike) */
+    reactions: Record<string, number>;
+    /** Comments on this post */
+    comments: OnChainComment[];
 }
 
 export interface DecryptedImage {

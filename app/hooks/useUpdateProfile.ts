@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useQueryClient } from '@tanstack/react-query';
 import { useExecuteTransaction } from './useExecuteTransaction';
 import { buildUpdateProfile } from '@/lib/contract';
 import { uploadPublicImage } from '@/lib/walrus';
+import { queryKeys } from '@/constants/query-keys';
 
 // ============================================================
 // useUpdateProfile — Upload avatar to Walrus + update on-chain
@@ -36,6 +39,8 @@ export function useUpdateProfile(): UseUpdateProfileResult {
     const [step, setStep] = useState<'idle' | 'uploading' | 'signing'>('idle');
     const [error, setError] = useState<string | null>(null);
     const { executeTransaction } = useExecuteTransaction();
+    const queryClient = useQueryClient();
+    const currentAccount = useCurrentAccount();
 
     const updateProfile = useCallback(
         async (serviceObjectId: string, input: UpdateProfileInput): Promise<boolean> => {
@@ -63,6 +68,11 @@ export function useUpdateProfile(): UseUpdateProfileResult {
                 await executeTransaction(tx);
 
                 setStep('idle');
+                // Invalidate creator cache
+                if (currentAccount?.address) {
+                    queryClient.invalidateQueries({ queryKey: queryKeys.creator(currentAccount.address) });
+                }
+                queryClient.invalidateQueries({ queryKey: queryKeys.allCreators() });
                 return true;
             } catch (err) {
                 console.error('[useUpdateProfile] error:', err);
