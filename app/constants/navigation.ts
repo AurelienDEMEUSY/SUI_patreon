@@ -16,14 +16,6 @@ export const SIDEBAR_NAV: NavItem[] = [
     requiresAuth: true,
   },
   {
-    id: 'messages',
-    label: 'Messages',
-    href: '/app/messages',
-    icon: 'MessageCircle',
-    requiresAuth: true,
-    badge: 3,
-  },
-  {
     id: 'creator-hub',
     label: 'Creator Hub',
     href: '/app/creator-hub',

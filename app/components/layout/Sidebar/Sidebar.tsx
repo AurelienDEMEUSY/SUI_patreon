@@ -120,7 +120,7 @@ export function Sidebar({ className = '', isCreator = false, onBecomeCreator }: 
               <User size={20} />
               Profile
             </DropdownItem>
-            <DropdownItem>
+            <DropdownItem onClick={() => router.push('/app/settings/profile')}>
               <Settings size={20} />
               Settings
             </DropdownItem>

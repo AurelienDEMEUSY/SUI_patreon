@@ -1,6 +1,7 @@
 'use client';
 
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import { Creator, Tier } from '@/types';
 import { useSubscribe } from '@/hooks/useSubscribe';
 import { useCreatorBlobUrl } from '@/hooks/useCreatorBlobUrl';
@@ -269,9 +270,16 @@ export function CreatorHeader({ creator, serviceObjectId, isOwnProfile, onAddTie
                                 </div>
                             </div>
 
-                            {/* Create Post / Add Tier — top right of card (owner only) */}
+                            {/* Create Post / Add Tier / Settings — top right of card (owner only) */}
                             {isOwnProfile && (
                                 <div className="flex flex-wrap items-center justify-end gap-3 shrink-0">
+                                    <Link
+                                        href="/app/settings/profile"
+                                        className="h-11 w-11 flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] hover:bg-white/[0.10] hover:border-white/20 text-gray-400 hover:text-white transition-all active:scale-95"
+                                        title="Paramètres du profil"
+                                    >
+                                        <span className="material-symbols-outlined text-xl">settings</span>
+                                    </Link>
                                     <button
                                         onClick={onCreatePost}
                                         className="h-11 px-6 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] hover:from-[#4f4ff8] hover:to-[#7c7ff9] text-white font-bold rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(60,60,246,0.5)] hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.7)] active:scale-95 flex items-center justify-center gap-2 text-sm"
