@@ -2,8 +2,10 @@
 
 import { useState, useCallback } from 'react';
 import { useSuiClient, useCurrentAccount } from '@mysten/dapp-kit';
+import { useQueryClient } from '@tanstack/react-query';
 import { buildSubscribe } from '@/lib/contract';
 import { useSponsoredTransaction } from '@/enoki/sponsor';
+import { queryKeys } from '@/constants/query-keys';
 
 interface UseSubscribeResult {
     /** Subscribe to a tier */
@@ -32,6 +34,7 @@ export function useSubscribe(): UseSubscribeResult {
     const currentAccount = useCurrentAccount();
     const { sponsorAndExecute } = useSponsoredTransaction();
     const suiClient = useSuiClient();
+    const queryClient = useQueryClient();
 
     const subscribe = useCallback(async (
         serviceObjectId: string,
@@ -49,8 +52,6 @@ export function useSubscribe(): UseSubscribeResult {
 
         try {
             // ── 1. Fetch the user's SUI coins ──
-            // We need explicit coin objects because tx.gas is forbidden in
-            // Enoki sponsored transactions (GasCoin belongs to the sponsor).
             const { data: coins } = await suiClient.getCoins({
                 owner: currentAccount.address,
                 coinType: '0x2::sui::SUI',
@@ -60,7 +61,6 @@ export function useSubscribe(): UseSubscribeResult {
                 throw new Error('You have no SUI coins. Please fund your wallet.');
             }
 
-            // Check total balance across all coins
             const totalBalance = coins.reduce(
                 (sum, c) => sum + BigInt(c.balance),
                 BigInt(0),
@@ -73,9 +73,6 @@ export function useSubscribe(): UseSubscribeResult {
                 );
             }
 
-            // Select coins to cover the payment.
-            // If a single coin is large enough, use just that one.
-            // Otherwise, pass all coins to be merged in the transaction.
             const singleCoin = coins.find(
                 (c) => BigInt(c.balance) >= BigInt(priceInMist),
             );
@@ -95,7 +92,6 @@ export function useSubscribe(): UseSubscribeResult {
             );
 
             // ── 3. Sponsor & execute ──
-            // Pass coin object IDs as extra allowed addresses for Enoki validation
             const result = await sponsorAndExecute(tx, {
                 extraAllowedAddresses: selectedCoins.map((c) => c.coinObjectId),
             });
@@ -106,6 +102,18 @@ export function useSubscribe(): UseSubscribeResult {
             });
 
             setIsSuccess(true);
+
+            // ── 4. Invalidate related queries ──
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.subscriptionStatus(serviceObjectId, currentAccount.address),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.mySubscriptions(currentAccount.address),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.creator(serviceObjectId),
+            });
+
             return true;
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Subscription failed';
@@ -115,7 +123,7 @@ export function useSubscribe(): UseSubscribeResult {
         } finally {
             setIsLoading(false);
         }
-    }, [currentAccount, sponsorAndExecute, suiClient]);
+    }, [currentAccount, sponsorAndExecute, suiClient, queryClient]);
 
     return { subscribe, isLoading, error, isSuccess };
 }

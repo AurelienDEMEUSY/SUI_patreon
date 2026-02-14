@@ -1,13 +1,40 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSuiClient } from '@mysten/dapp-kit';
+import { queryKeys } from '@/constants/query-keys';
 import type { OnChainPost } from '@/types/post.types';
 import { parseOnChainPosts, getNextPostId } from '@/lib/post-service';
+import type { SuiJsonRpcClient } from '@mysten/sui/jsonRpc';
 
 // ============================================================
 // useCreatorPosts — fetch posts from on-chain Service object
 // ============================================================
+
+interface CreatorPostsData {
+    posts: OnChainPost[];
+    nextPostId: number;
+}
+
+async function fetchCreatorPosts(
+    suiClient: SuiJsonRpcClient,
+    serviceObjectId: string,
+): Promise<CreatorPostsData> {
+    const serviceObject = await suiClient.getObject({
+        id: serviceObjectId,
+        options: { showContent: true },
+    });
+
+    if (serviceObject.data?.content?.dataType === 'moveObject') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fields = (serviceObject.data.content as any).fields;
+        const parsedPosts = parseOnChainPosts(fields);
+        parsedPosts.sort((a, b) => b.createdAtMs - a.createdAtMs);
+        return { posts: parsedPosts, nextPostId: getNextPostId(fields) };
+    }
+
+    return { posts: [], nextPostId: 0 };
+}
 
 interface UseCreatorPostsResult {
     /** Parsed on-chain posts (sorted by createdAtMs desc) */
@@ -27,69 +54,27 @@ interface UseCreatorPostsResult {
  * Also exposes `nextPostId` which is required before SEAL encryption.
  */
 export function useCreatorPosts(serviceObjectId: string | null): UseCreatorPostsResult {
-    const [posts, setPosts] = useState<OnChainPost[]>([]);
-    const [nextPostId, setNextPostId] = useState<number>(0);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [refetchCount, setRefetchCount] = useState(0);
     const suiClient = useSuiClient();
+    const queryClient = useQueryClient();
 
-    const refetch = useCallback((): void => {
-        setRefetchCount((c) => c + 1);
-    }, []);
+    const { data, isLoading, error } = useQuery({
+        queryKey: queryKeys.creatorPosts(serviceObjectId ?? ''),
+        queryFn: () => fetchCreatorPosts(suiClient, serviceObjectId!),
+        enabled: !!serviceObjectId,
+        staleTime: 15_000,
+    });
 
-    useEffect(() => {
-        if (!serviceObjectId) {
-            setPosts([]);
-            setNextPostId(0);
-            return;
+    const refetch = () => {
+        if (serviceObjectId) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.creatorPosts(serviceObjectId) });
         }
+    };
 
-        let cancelled = false;
-        setIsLoading(true);
-        setError(null);
-
-        const fetchPosts = async () => {
-            try {
-                const serviceObject = await suiClient.getObject({
-                    id: serviceObjectId,
-                    options: { showContent: true },
-                });
-
-                if (cancelled) return;
-
-                if (serviceObject.data?.content?.dataType === 'moveObject') {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const fields = (serviceObject.data.content as any).fields;
-
-                    const parsedPosts = parseOnChainPosts(fields);
-                    // Sort by creation date, newest first
-                    parsedPosts.sort((a, b) => b.createdAtMs - a.createdAtMs);
-                    setPosts(parsedPosts);
-
-                    setNextPostId(getNextPostId(fields));
-                } else {
-                    setPosts([]);
-                    setNextPostId(0);
-                }
-            } catch (err) {
-                if (!cancelled) {
-                    console.error('[useCreatorPosts] fetch error:', err);
-                    setError(err instanceof Error ? err.message : 'Failed to fetch posts');
-                }
-            } finally {
-                if (!cancelled) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        fetchPosts();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [serviceObjectId, suiClient, refetchCount]);
-
-    return { posts, nextPostId, isLoading, error, refetch };
+    return {
+        posts: data?.posts ?? [],
+        nextPostId: data?.nextPostId ?? 0,
+        isLoading,
+        error: error ? (error instanceof Error ? error.message : 'Failed to fetch posts') : null,
+        refetch,
+    };
 }

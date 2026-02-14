@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { findActiveServiceId } from '@/lib/service-lookup';
 import { getSubscriberCount } from '@/lib/subscriber-count';
 import { getWalrusImageUrl } from '@/lib/walrus';
+import { queryKeys } from '@/constants/query-keys';
 import type { Creator, Tier } from '@/types';
+import type { SuiJsonRpcClient } from '@mysten/sui/jsonRpc';
 
 /**
  * Parse on-chain Service object fields into our Creator type.
@@ -53,6 +55,48 @@ function parseServiceToCreator(
     };
 }
 
+/** Pure async fetcher — no React hooks inside. */
+async function fetchCreatorData(
+    suiClient: SuiJsonRpcClient,
+    effectiveAddress: string,
+): Promise<{ creator: Creator; serviceObjectId: string | null }> {
+    const foundServiceId = await findActiveServiceId(suiClient, effectiveAddress);
+
+    if (foundServiceId) {
+        const serviceObject = await suiClient.getObject({
+            id: foundServiceId,
+            options: { showContent: true },
+        });
+
+        if (serviceObject.data?.content?.dataType === 'moveObject') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const fields = (serviceObject.data.content as any).fields;
+            const creator = parseServiceToCreator(foundServiceId, fields, effectiveAddress);
+            const totalSubscribers = await getSubscriberCount(suiClient, foundServiceId, fields);
+            return {
+                creator: { ...creator, totalSubscribers },
+                serviceObjectId: foundServiceId,
+            };
+        }
+    }
+
+    return {
+        creator: {
+            address: effectiveAddress,
+            name: 'New Creator',
+            bio: 'Welcome! Connect your wallet and start creating.',
+            avatarBlobId: null,
+            bannerBlobId: null,
+            suinsName: null,
+            totalSubscribers: 0,
+            totalContent: 0,
+            tiers: [],
+            createdAt: Math.floor(Date.now() / 1000),
+        },
+        serviceObjectId: null,
+    };
+}
+
 /**
  * Hook to fetch a single creator's data from on-chain.
  *
@@ -61,75 +105,21 @@ function parseServiceToCreator(
  * 3. Falls back to a default empty profile if no Service exists.
  */
 export function useCreator(addressOrServiceId: string | null) {
-    const [creator, setCreator] = useState<Creator | null>(null);
-    const [serviceObjectId, setServiceObjectId] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
     const currentAccount = useCurrentAccount();
     const suiClient = useSuiClient();
     const effectiveAddress = addressOrServiceId || currentAccount?.address || null;
 
-    useEffect(() => {
-        if (!effectiveAddress) return;
+    const { data, isLoading, error } = useQuery({
+        queryKey: queryKeys.creator(effectiveAddress ?? ''),
+        queryFn: () => fetchCreatorData(suiClient, effectiveAddress!),
+        enabled: !!effectiveAddress,
+        staleTime: 30_000,
+    });
 
-        let cancelled = false;
-        setIsLoading(true);
-        setError(null);
-
-        const fetchCreator = async () => {
-            try {
-                const foundServiceId = await findActiveServiceId(suiClient, effectiveAddress);
-
-                if (cancelled) return;
-
-                if (foundServiceId) {
-                    const serviceObject = await suiClient.getObject({
-                        id: foundServiceId,
-                        options: { showContent: true },
-                    });
-
-                    if (cancelled) return;
-
-                    if (serviceObject.data?.content?.dataType === 'moveObject') {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const fields = (serviceObject.data.content as any).fields;
-                        const creator = parseServiceToCreator(foundServiceId, fields, effectiveAddress);
-                        const totalSubscribers = await getSubscriberCount(suiClient, foundServiceId, fields);
-                        setCreator({ ...creator, totalSubscribers });
-                        setServiceObjectId(foundServiceId);
-                    }
-                } else {
-                    setCreator({
-                        address: effectiveAddress,
-                        name: 'New Creator',
-                        bio: 'Welcome! Connect your wallet and start creating.',
-                        avatarBlobId: null,
-                        bannerBlobId: null,
-                        suinsName: null,
-                        totalSubscribers: 0,
-                        totalContent: 0,
-                        tiers: [],
-                        createdAt: Math.floor(Date.now() / 1000),
-                    });
-                    setServiceObjectId(null);
-                }
-            } catch (err) {
-                if (!cancelled) {
-                    console.error('[useCreator] fetch error:', err);
-                    setError(err instanceof Error ? err.message : 'Failed to fetch creator');
-                }
-            } finally {
-                if (!cancelled) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        fetchCreator();
-
-        return () => { cancelled = true; };
-    }, [effectiveAddress, suiClient]);
-
-    return { creator, serviceObjectId, isLoading, error };
+    return {
+        creator: data?.creator ?? null,
+        serviceObjectId: data?.serviceObjectId ?? null,
+        isLoading,
+        error: error ? (error instanceof Error ? error.message : 'Failed to fetch creator') : null,
+    };
 }

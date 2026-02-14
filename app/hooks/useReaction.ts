@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useExecuteTransaction } from './useExecuteTransaction';
 import { buildReactToPost } from '@/lib/contract';
+import { queryKeys } from '@/constants/query-keys';
 
 // ============================================================
 // useReaction — toggle like/dislike on a post
@@ -19,24 +20,34 @@ interface UseReactionResult {
 
 export function useReaction(serviceObjectId: string, postId: number): UseReactionResult {
     const { executeTransaction, isPending: txPending } = useExecuteTransaction();
-    const [isPending, setIsPending] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
-    const react = useCallback(async (reaction: 1 | 2): Promise<boolean> => {
-        setIsPending(true);
-        setError(null);
-        try {
+    const mutation = useMutation({
+        mutationFn: async (reaction: 1 | 2) => {
             const tx = buildReactToPost(serviceObjectId, postId, reaction);
             await executeTransaction(tx);
-            return true;
-        } catch (err) {
+        },
+        onSuccess: () => {
+            // Invalidate the posts list so reaction counts are refreshed
+            queryClient.invalidateQueries({ queryKey: queryKeys.creatorPosts(serviceObjectId) });
+        },
+        onError: (err) => {
             console.error('[useReaction] error:', err);
-            setError(err instanceof Error ? err.message : 'Failed to react');
-            return false;
-        } finally {
-            setIsPending(false);
-        }
-    }, [serviceObjectId, postId, executeTransaction]);
+        },
+    });
 
-    return { react, isPending: isPending || txPending, error };
+    const react = async (reaction: 1 | 2): Promise<boolean> => {
+        try {
+            await mutation.mutateAsync(reaction);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    return {
+        react,
+        isPending: mutation.isPending || txPending,
+        error: mutation.error ? (mutation.error instanceof Error ? mutation.error.message : 'Failed to react') : null,
+    };
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useExecuteTransaction } from './useExecuteTransaction';
 import { buildAddComment, buildDeleteComment } from '@/lib/contract';
+import { queryKeys } from '@/constants/query-keys';
 
 // ============================================================
 // useComments — add/delete comments on a post
@@ -21,40 +22,59 @@ interface UseCommentsResult {
 
 export function useComments(serviceObjectId: string, postId: number): UseCommentsResult {
     const { executeTransaction, isPending: txPending } = useExecuteTransaction();
-    const [isPending, setIsPending] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
-    const addComment = useCallback(async (content: string): Promise<boolean> => {
-        setIsPending(true);
-        setError(null);
-        try {
+    const invalidatePosts = () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.creatorPosts(serviceObjectId) });
+    };
+
+    const addMutation = useMutation({
+        mutationFn: async (content: string) => {
             const tx = buildAddComment(serviceObjectId, postId, content);
             await executeTransaction(tx);
-            return true;
-        } catch (err) {
+        },
+        onSuccess: invalidatePosts,
+        onError: (err) => {
             console.error('[useComments] addComment error:', err);
-            setError(err instanceof Error ? err.message : 'Failed to add comment');
-            return false;
-        } finally {
-            setIsPending(false);
-        }
-    }, [serviceObjectId, postId, executeTransaction]);
+        },
+    });
 
-    const deleteComment = useCallback(async (commentIndex: number): Promise<boolean> => {
-        setIsPending(true);
-        setError(null);
-        try {
+    const deleteMutation = useMutation({
+        mutationFn: async (commentIndex: number) => {
             const tx = buildDeleteComment(serviceObjectId, postId, commentIndex);
             await executeTransaction(tx);
-            return true;
-        } catch (err) {
+        },
+        onSuccess: invalidatePosts,
+        onError: (err) => {
             console.error('[useComments] deleteComment error:', err);
-            setError(err instanceof Error ? err.message : 'Failed to delete comment');
-            return false;
-        } finally {
-            setIsPending(false);
-        }
-    }, [serviceObjectId, postId, executeTransaction]);
+        },
+    });
 
-    return { addComment, deleteComment, isPending: isPending || txPending, error };
+    const addComment = async (content: string): Promise<boolean> => {
+        try {
+            await addMutation.mutateAsync(content);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    const deleteComment = async (commentIndex: number): Promise<boolean> => {
+        try {
+            await deleteMutation.mutateAsync(commentIndex);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    const isPending = addMutation.isPending || deleteMutation.isPending || txPending;
+    const error = addMutation.error || deleteMutation.error;
+
+    return {
+        addComment,
+        deleteComment,
+        isPending,
+        error: error ? (error instanceof Error ? error.message : 'Failed') : null,
+    };
 }
