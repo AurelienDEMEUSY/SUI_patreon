@@ -218,7 +218,7 @@ entry fun update_creator_profile(
 // ============================================================
 
 /// Set or update the SuiNS subname for this creator's service.
-/// The actual leaf subname creation on SuiNS must be done separately via PTB.
+/// The actual node subname creation on SuiNS is done server-side via the API route.
 entry fun set_suins_name(
     service: &mut Service,
     platform: &mut Platform,
@@ -253,7 +253,8 @@ entry fun set_suins_name(
 }
 
 /// Remove the SuiNS subname from this creator's service.
-/// The actual leaf subname removal on SuiNS should be done separately via PTB.
+/// Note: because node subnames are NFTs owned by the creator, they persist
+/// on SuiNS until expiration — this only clears the platform's internal link.
 entry fun remove_suins_name(
     service: &mut Service,
     platform: &mut Platform,
@@ -270,8 +271,9 @@ entry fun remove_suins_name(
     event::emit(SuinsNameRemoved { creator: sender, suins_name: name });
 }
 
-/// Admin: forcibly remove a creator's SuiNS subname (e.g., to revoke an inappropriate name).
-/// The actual leaf subname removal on SuiNS should be done separately via PTB.
+/// Admin: forcibly remove a creator's SuiNS subname from the platform registry.
+/// Note: with node subnames the NFT cannot be revoked on SuiNS — this only
+/// clears the internal link so the name no longer resolves on the platform.
 entry fun admin_remove_suins_name(
     service: &mut Service,
     platform: &mut Platform,

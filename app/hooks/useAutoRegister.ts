@@ -62,7 +62,7 @@ export function useAutoRegister() {
                 setServiceObjectId(newServiceId);
                 setNeedsRegistration(false);
 
-                // Step 2: Create the leaf subname on SuiNS (server-side, admin signs)
+                // Step 2: Create the node subname on SuiNS (server-side, admin signs)
                 try {
                     const suinsRes = await fetch('/api/suins/create-subname', {
                         method: 'POST',
