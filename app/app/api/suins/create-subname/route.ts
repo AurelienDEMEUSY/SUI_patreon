@@ -14,8 +14,8 @@ import { findActiveServiceId } from "@/lib/service-lookup";
 // ============================================================
 // POST /api/suins/create-subname
 // ============================================================
-// Protected route: creates a leaf subname `<pseudo>.patreon.sui`
-// pointing to the creator's address.
+// Protected route: creates a **node** subname `<pseudo>.patreon.sui`
+// as a real SubDomainRegistration NFT transferred to the creator.
 //
 // Body: { creatorAddress: string }
 //
@@ -65,6 +65,27 @@ function getAdminKeypair(): Ed25519Keypair {
 function getServiceFields(serviceObject: any): any {
     if (serviceObject?.data?.content?.dataType !== "moveObject") return null;
     return serviceObject.data.content.fields;
+}
+
+/**
+ * Fetch the expiration timestamp of the parent NFT (patreon.sui).
+ * Node subnames must expire ≤ parent expiration.
+ */
+async function getParentExpiration(client: SuiJsonRpcClient): Promise<string> {
+    const parentObj = await client.getObject({
+        id: SUINS_PARENT_NFT_ID,
+        options: { showContent: true },
+    });
+    const fields = parentObj?.data?.content;
+    if (fields?.dataType !== "moveObject") {
+        throw new Error("Failed to read parent NFT object");
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expirationMs = (fields.fields as any)?.expiration_timestamp_ms;
+    if (!expirationMs) {
+        throw new Error("Parent NFT has no expiration_timestamp_ms");
+    }
+    return expirationMs;
 }
 
 export async function POST(request: Request) {
@@ -176,8 +197,8 @@ export async function POST(request: Request) {
             if (existing) {
                 // Subname exists on SuiNS but the Service has no suins_name linked
                 // (checked in step 3 above). This means a previous attempt created
-                // the leaf but the contract link failed. Return success so the
-                // frontend can proceed with set_suins_name.
+                // the node subname but the contract link failed. Return success so
+                // the frontend can proceed with set_suins_name.
                 alreadyExistsOnSuins = true;
             }
         } catch {
@@ -195,17 +216,36 @@ export async function POST(request: Request) {
         }
 
         // ----------------------------------------------------------------
-        // 6. Build + sign + execute the leaf creation transaction
+        // 6. Get the parent NFT expiration (node subnames must expire ≤ parent)
+        // ----------------------------------------------------------------
+        const parentExpirationMs = await getParentExpiration(client);
+
+        // ----------------------------------------------------------------
+        // 7. Build + sign + execute the node subname creation transaction.
+        //    Creates a SubDomainRegistration NFT and transfers it
+        //    to the creator — they truly own the name.
         // ----------------------------------------------------------------
         const adminKeypair = getAdminKeypair();
         const tx = new Transaction();
         const suinsTx = new SuinsTransaction(suins, tx);
 
-        suinsTx.createLeafSubName({
+        const subNameNft = suinsTx.createSubName({
             parentNft: SUINS_PARENT_NFT_ID,
             name: fullSubname,
-            targetAddress: creatorAddress,
+            expirationTimestampMs: Number(parentExpirationMs),
+            allowChildCreation: false,
+            allowTimeExtension: true,
         });
+
+        // Set the target address BEFORE transferring (NFT is consumed by transfer)
+        suinsTx.setTargetAddress({
+            nft: subNameNft,
+            address: creatorAddress,
+            isSubname: true,
+        });
+
+        // Transfer the SubDomainRegistration NFT to the creator
+        tx.transferObjects([subNameNft], tx.pure.address(creatorAddress));
 
         tx.setSender(adminKeypair.toSuiAddress());
 
@@ -218,11 +258,8 @@ export async function POST(request: Request) {
         await client.waitForTransaction({ digest: result.digest });
 
         // ----------------------------------------------------------------
-        // 7. Now set the suins_name in the contract.
-        //    We use a SECOND transaction because set_suins_name checks
-        //    service.creator == sender — the admin can't sign it.
-        //    Instead we return the subname so the frontend can call
-        //    set_suins_name() client-side.
+        // 8. Return the subname so the frontend can call set_suins_name()
+        //    client-side to link it to the Service object.
         // ----------------------------------------------------------------
 
         return NextResponse.json({
