@@ -76,20 +76,36 @@ export function useCreator(addressOrServiceId: string | null) {
 
         const fetchCreator = async () => {
             try {
-                // Step 1: Try to find the Service object for this creator
-                // Query CreatorRegistered events to find the Service object ID
-                const events = await suiClient.queryEvents({
+                // Step 1: Query CreatorRegistered events to find Service object ID
+                const registeredEvents = await suiClient.queryEvents({
                     query: {
                         MoveEventType: `${PACKAGE_ID}::service::CreatorRegistered`,
                     },
                     limit: 50,
                 });
 
+                // Also query CreatorDeleted events to detect deleted profiles
+                const deletedEvents = await suiClient.queryEvents({
+                    query: {
+                        MoveEventType: `${PACKAGE_ID}::service::CreatorDeleted`,
+                    },
+                    limit: 50,
+                });
+
+                const myRegistrations = registeredEvents.data.filter(
+                    (e) => (e.parsedJson as { creator?: string })?.creator === effectiveAddress
+                );
+                const myDeletions = deletedEvents.data.filter(
+                    (e) => (e.parsedJson as { creator?: string })?.creator === effectiveAddress
+                );
+
+                // If deletions >= registrations, the profile has been deleted
+                const wasDeleted = myRegistrations.length > 0 && myDeletions.length >= myRegistrations.length;
+
                 let foundServiceId: string | null = null;
 
-                for (const event of events.data) {
-                    const parsedJson = event.parsedJson as { creator?: string };
-                    if (parsedJson?.creator === effectiveAddress) {
+                if (!wasDeleted) {
+                    for (const event of myRegistrations) {
                         // Find the Service object from the transaction
                         const txDigest = event.id.txDigest;
                         const txDetails = await suiClient.getTransactionBlock({
@@ -104,8 +120,19 @@ export function useCreator(addressOrServiceId: string | null) {
                         );
 
                         if (serviceObj && 'objectId' in serviceObj) {
-                            foundServiceId = serviceObj.objectId;
-                            break;
+                            const objectId = serviceObj.objectId;
+
+                            // Validate the object still exists on-chain
+                            const objectResponse = await suiClient.getObject({
+                                id: objectId,
+                                options: { showContent: true },
+                            });
+
+                            if (objectResponse.data?.content) {
+                                foundServiceId = objectId;
+                                break;
+                            }
+                            // Object was destroyed, skip it
                         }
                     }
                 }

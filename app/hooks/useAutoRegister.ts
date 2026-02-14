@@ -26,36 +26,71 @@ export function useAutoRegister() {
 
     /**
      * Query on-chain to find a Service object owned by this creator.
+     * After finding the object ID from events, validates that the object
+     * still exists on-chain (it may have been destroyed via delete_creator_profile).
      */
     const findExistingService = useCallback(async (address: string): Promise<string | null> => {
         try {
-            const events = await suiClient.queryEvents({
+            // First, check if this creator has been deleted — if the most recent
+            // relevant event is CreatorDeleted, we know there's no active Service.
+            const deletedEvents = await suiClient.queryEvents({
+                query: {
+                    MoveEventType: `${PACKAGE_ID}::service::CreatorDeleted`,
+                },
+                limit: 50,
+            });
+
+            const registeredEvents = await suiClient.queryEvents({
                 query: {
                     MoveEventType: `${PACKAGE_ID}::service::CreatorRegistered`,
                 },
                 limit: 50,
             });
 
-            for (const event of events.data) {
-                const parsedJson = event.parsedJson as { creator?: string };
-                if (parsedJson?.creator === address) {
-                    const txDigest = event.id.txDigest;
-                    const txDetails = await suiClient.getTransactionBlock({
-                        digest: txDigest,
-                        options: { showObjectChanges: true },
+            // Find all registration and deletion events for this address
+            const myRegistrations = registeredEvents.data.filter(
+                (e) => (e.parsedJson as { creator?: string })?.creator === address
+            );
+            const myDeletions = deletedEvents.data.filter(
+                (e) => (e.parsedJson as { creator?: string })?.creator === address
+            );
+
+            // If there are as many (or more) deletions as registrations, no active profile
+            if (myRegistrations.length > 0 && myDeletions.length >= myRegistrations.length) {
+                return null;
+            }
+
+            // Find the Service object ID from the most recent registration event
+            for (const event of myRegistrations) {
+                const txDigest = event.id.txDigest;
+                const txDetails = await suiClient.getTransactionBlock({
+                    digest: txDigest,
+                    options: { showObjectChanges: true },
+                });
+
+                const serviceObj = txDetails.objectChanges?.find(
+                    (change) =>
+                        change.type === 'created' &&
+                        change.objectType?.includes('::service::Service')
+                );
+
+                if (serviceObj && 'objectId' in serviceObj) {
+                    const objectId = serviceObj.objectId;
+
+                    // Validate the object still exists on-chain
+                    const objectResponse = await suiClient.getObject({
+                        id: objectId,
+                        options: { showContent: true },
                     });
 
-                    const serviceObj = txDetails.objectChanges?.find(
-                        (change) =>
-                            change.type === 'created' &&
-                            change.objectType?.includes('::service::Service')
-                    );
-
-                    if (serviceObj && 'objectId' in serviceObj) {
-                        return serviceObj.objectId;
+                    if (objectResponse.data?.content) {
+                        return objectId;
                     }
+                    // Object was destroyed — continue checking other events
+                    // (in case the user re-registered after deleting)
                 }
             }
+
             return null;
         } catch (err) {
             console.error('Error finding existing service:', err);

@@ -43,12 +43,47 @@ export function useAllCreators() {
 
                 if (cancelled) return;
 
+                // Step 1b: Query CreatorDeleted events to exclude deleted creators
+                const deletedEvents = await suiClient.queryEvents({
+                    query: {
+                        MoveEventType: `${PACKAGE_ID}::service::CreatorDeleted`,
+                    },
+                    limit: 50,
+                });
+
+                if (cancelled) return;
+
+                // Build a set of deleted creator addresses with their deletion count
+                const deletionCounts = new Map<string, number>();
+                for (const event of deletedEvents.data) {
+                    const addr = (event.parsedJson as { creator?: string })?.creator;
+                    if (addr) {
+                        deletionCounts.set(addr, (deletionCounts.get(addr) || 0) + 1);
+                    }
+                }
+
+                // Count registrations per address
+                const registrationCounts = new Map<string, number>();
+                for (const event of events.data) {
+                    const addr = (event.parsedJson as { creator?: string })?.creator;
+                    if (addr) {
+                        registrationCounts.set(addr, (registrationCounts.get(addr) || 0) + 1);
+                    }
+                }
+
                 // Step 2: For each event, find the Service object ID from the tx
+                // Skip creators whose deletions >= registrations (profile was deleted)
                 const creatorEntries: { address: string; serviceObjectId: string }[] = [];
 
                 for (const event of events.data) {
                     const parsedJson = event.parsedJson as { creator?: string; name?: string };
                     if (!parsedJson?.creator) continue;
+
+                    // Skip creators that have been deleted
+                    const addr = parsedJson.creator;
+                    const regCount = registrationCounts.get(addr) || 0;
+                    const delCount = deletionCounts.get(addr) || 0;
+                    if (delCount >= regCount) continue;
 
                     const txDigest = event.id.txDigest;
                     const txDetails = await suiClient.getTransactionBlock({
