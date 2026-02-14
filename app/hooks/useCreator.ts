@@ -94,18 +94,8 @@ export function useCreator(addressOrServiceId: string | null) {
                         setServiceObjectId(foundServiceId);
                     }
                 } else {
-                    setCreator({
-                        address: effectiveAddress,
-                        name: 'New Creator',
-                        bio: 'Welcome! Connect your wallet and start creating.',
-                        avatarBlobId: null,
-                        bannerBlobId: null,
-                        suinsName: null,
-                        totalSubscribers: 0,
-                        totalContent: 0,
-                        tiers: [],
-                        createdAt: Math.floor(Date.now() / 1000),
-                    });
+                    // No on-chain Service found — leave creator as null
+                    setCreator(null);
                     setServiceObjectId(null);
                 }
             } catch (err) {
