@@ -8,39 +8,22 @@ use sui::sui::SUI;
 use sui::balance::{Self, Balance};
 use std::string::String;
 
-// ============================================================
-// Error codes
-// ============================================================
 const ENoFundsToWithdraw: u64 = 7;
 const EInvalidFee: u64 = 13;
 
-// ============================================================
-// Structs
-// ============================================================
-
-/// Platform registry — the central directory of all creators.
 public struct Platform has key {
     id: UID,
-    /// Creator address -> Service object ID (for discovery)
     creators: Table<address, ID>,
-    /// Platform fee in basis points (e.g., 500 = 5%)
     platform_fee_bps: u64,
-    /// Accumulated platform fees
     platform_fees: Balance<SUI>,
-    /// SuiNS subname -> Creator address (for uniqueness & discovery)
     suins_names: Table<String, address>,
 }
 
-/// Admin capability for the platform.
 public struct AdminCap has key, store {
     id: UID,
 }
 
-// ============================================================
-// Initialization
-// ============================================================
 
-/// Called once at module publication — creates the Platform and AdminCap.
 fun init(ctx: &mut TxContext) {
     let platform = Platform {
         id: object::new(ctx),
@@ -57,11 +40,6 @@ fun init(ctx: &mut TxContext) {
     transfer::transfer(admin_cap, ctx.sender());
 }
 
-// ============================================================
-// Admin functions
-// ============================================================
-
-/// Admin withdraws platform fees.
 entry fun withdraw_platform_fees(
     platform: &mut Platform,
     _admin: &AdminCap,
@@ -74,29 +52,20 @@ entry fun withdraw_platform_fees(
     transfer::public_transfer(withdrawn, ctx.sender());
 }
 
-/// Admin: update platform fee (max 10%).
 entry fun update_platform_fee(
     platform: &mut Platform,
     _admin: &AdminCap,
     new_fee_bps: u64,
     _ctx: &TxContext,
 ) {
-    assert!(new_fee_bps <= 1000, EInvalidFee); // Max 10%
+    assert!(new_fee_bps <= 1000, EInvalidFee);
     platform.platform_fee_bps = new_fee_bps;
 }
 
-// ============================================================
-// View functions
-// ============================================================
 
-/// Get platform fees balance.
 public fun get_platform_fees(platform: &Platform): u64 {
     balance::value(&platform.platform_fees)
 }
-
-// ============================================================
-// Package-internal helpers
-// ============================================================
 
 public(package) fun has_creator(platform: &Platform, creator: address): bool {
     platform.creators.contains(creator)
@@ -118,10 +87,7 @@ public(package) fun add_platform_fee(platform: &mut Platform, fee: Balance<SUI>)
     balance::join(&mut platform.platform_fees, fee);
 }
 
-// ============================================================
-// SuiNS helpers (package-internal)
-// ============================================================
-
+//SuiNS
 public(package) fun has_suins_name(platform: &Platform, name: String): bool {
     platform.suins_names.contains(name)
 }
@@ -134,14 +100,10 @@ public(package) fun unregister_suins_name(platform: &mut Platform, name: String)
     platform.suins_names.remove(name);
 }
 
-/// Resolve a SuiNS subname to a creator address.
 public fun resolve_suins_name(platform: &Platform, name: String): address {
     *platform.suins_names.borrow(name)
 }
 
-// ============================================================
-// Test helpers
-// ============================================================
 
 #[test_only]
 public fun init_for_testing(ctx: &mut TxContext) {

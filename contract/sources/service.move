@@ -1,8 +1,6 @@
 /// Module: service
 /// Creator's service object — profile, tiers, posts, Seal access control, and views.
 /// Each creator has their own Service, whose object ID is used as the Seal identity.
-///
-/// Seal ID format: `bcs::to_bytes(&service_object_id)`
 module contract::service;
 
 use sui::table::{Self, Table};
@@ -16,9 +14,6 @@ use std::string::String;
 use contract::types::{Self, SubscriptionTier, Post, Subscription};
 use contract::platform::{Self, Platform, AdminCap};
 
-// ============================================================
-// Error codes
-// ============================================================
 const ENotCreator: u64 = 0;
 const EInvalidTier: u64 = 1;
 const ENoSubscription: u64 = 3;
@@ -37,9 +32,6 @@ const EInvalidReaction: u64 = 16;
 const ECommentNotFound: u64 = 17;
 const ENotCommentAuthor: u64 = 18;
 
-// ============================================================
-// Events
-// ============================================================
 
 public struct CreatorRegistered has copy, drop {
     creator: address,
@@ -101,38 +93,21 @@ public struct CommentDeleted has copy, drop {
     comment_index: u64,
 }
 
-// ============================================================
-// Structs
-// ============================================================
 
 /// A creator's service — the shared object that Seal uses for access control.
 public struct Service has key {
     id: UID,
-    /// Creator's address (owner)
     creator: address,
-    /// Display name
     name: String,
-    /// Description / bio
     description: String,
-    /// Avatar image blob ID on Walrus (public, not encrypted)
     avatar_blob_id: String,
-    /// Available subscription tiers
     tiers: vector<SubscriptionTier>,
-    /// Published posts
     posts: vector<Post>,
-    /// Next post ID counter
     next_post_id: u64,
-    /// Subscribers: subscriber_address -> Subscription
     subscribers: Table<address, Subscription>,
-    /// Accumulated revenue in SUI
     revenue: Balance<SUI>,
-    /// SuiNS subname (e.g., "alice.patreon.sui")
     suins_name: Option<String>,
 }
-
-// ============================================================
-// Creator functions
-// ============================================================
 
 /// Register as a creator on the platform.
 /// Creates a shared `Service` object whose ID becomes the Seal identity for this creator.
@@ -191,11 +166,9 @@ entry fun delete_creator_profile(
         suins_name,
     } = service;
 
-    // Require no active subscribers (Table must be empty to destroy)
     assert!(table::is_empty(&subscribers), EHasSubscribers);
     table::destroy_empty(subscribers);
 
-    // Transfer remaining revenue back to creator
     if (balance::value(&revenue) > 0) {
         let revenue_coin = coin::from_balance(revenue, ctx);
         transfer::public_transfer(revenue_coin, sender);
@@ -203,15 +176,11 @@ entry fun delete_creator_profile(
         balance::destroy_zero(revenue);
     };
 
-    // Unregister SuiNS name from platform if set
     if (suins_name.is_some()) {
         platform::unregister_suins_name(platform, *suins_name.borrow());
     };
 
-    // Unregister from platform
     platform::unregister_creator(platform, creator);
-
-    // Destroy the object
     object::delete(id);
 
     event::emit(CreatorDeleted { creator });
@@ -235,10 +204,6 @@ entry fun update_creator_profile(
     event::emit(ProfileUpdated { creator: sender, name });
 }
 
-// ============================================================
-// SuiNS name management
-// ============================================================
-
 /// Set or update the SuiNS subname for this creator's service.
 /// The actual node subname creation on SuiNS is done server-side via the API route.
 entry fun set_suins_name(
@@ -250,15 +215,12 @@ entry fun set_suins_name(
     let sender = ctx.sender();
     assert!(service.creator == sender, ENotCreator);
 
-    // If already has this exact name, nothing to do
     if (service.suins_name.is_some() && *service.suins_name.borrow() == suins_name) {
         return
     };
 
-    // Check name not taken by another creator
     assert!(!platform::has_suins_name(platform, suins_name), ESuinsNameTaken);
 
-    // If already has a different name, unregister old one
     if (service.suins_name.is_some()) {
         let old_name = *service.suins_name.borrow();
         platform::unregister_suins_name(platform, old_name);
@@ -312,10 +274,6 @@ entry fun admin_remove_suins_name(
 
     event::emit(SuinsNameRemoved { creator, suins_name: name });
 }
-
-// ============================================================
-// Tier management
-// ============================================================
 
 /// Add a subscription tier to the creator's service.
 entry fun add_subscription_tier(
@@ -374,10 +332,6 @@ entry fun remove_subscription_tier(
     assert!(found, EInvalidTier);
 }
 
-// ============================================================
-// Post management
-// ============================================================
-
 /// Publish an encrypted post. The blob IDs refer to Walrus-stored encrypted content.
 ///
 /// Seal ID = `bcs::to_bytes(service_addr) + bcs::to_bytes(post_id)`
@@ -416,7 +370,6 @@ entry fun publish_post(
     event::emit(PostPublished { creator: sender, post_id, required_tier });
 }
 
-/// Update an existing post.
 entry fun update_post(
     service: &mut Service,
     post_id: u64,
@@ -483,7 +436,6 @@ entry fun set_post_visibility(
     event::emit(PostUpdated { creator: sender, post_id });
 }
 
-/// Delete a post.
 entry fun delete_post(
     service: &mut Service,
     post_id: u64,
@@ -508,10 +460,6 @@ entry fun delete_post(
     event::emit(PostDeleted { creator: sender, post_id });
 }
 
-// ============================================================
-// Reactions & Comments
-// ============================================================
-
 /// React to a post (1 = like, 2 = dislike). Toggle: re-sending same reaction removes it.
 /// Access: creator always allowed; others need active subscription >= required_tier (free posts: anyone).
 entry fun react_to_post(
@@ -527,17 +475,14 @@ entry fun react_to_post(
     let post_idx = find_post_index(service, post_id);
     let required_tier = types::post_required_tier(&service.posts[post_idx]);
 
-    // Access check (skip for creator & free posts)
     assert_interaction_access(service, caller, required_tier, clock);
 
     let previous = types::set_reaction(&mut service.posts[post_idx], caller, reaction);
 
-    // Emit: if same reaction was toggled off, emit 0 (removed), otherwise emit new reaction
     let emitted_reaction = if (previous == reaction) { 0u8 } else { reaction };
     event::emit(PostReacted { user: caller, post_id, reaction: emitted_reaction });
 }
 
-/// Remove a reaction from a post.
 entry fun remove_reaction(
     service: &mut Service,
     post_id: u64,
@@ -598,10 +543,6 @@ entry fun delete_comment(
     event::emit(CommentDeleted { user: caller, post_id, comment_index });
 }
 
-// ============================================================
-// Creator revenue withdrawal
-// ============================================================
-
 /// Creator withdraws accumulated revenue.
 entry fun withdraw_creator_funds(
     service: &mut Service,
@@ -617,21 +558,6 @@ entry fun withdraw_creator_funds(
     transfer::public_transfer(withdrawn, sender);
 }
 
-// ============================================================
-// Seal integration — access policy
-// ============================================================
-//
-// Seal Identity = [PackageId] || [id]
-//   - PackageId is added automatically by the Seal SDK
-//   - id = bcs::to_bytes(&service_object_id) + bcs::to_bytes(&post_id)
-//
-// `seal_approve` is called by Seal key servers via dry_run.
-// If it doesn't abort, the decryption key is released.
-
-/// Seal entry point — verifies access for content decryption.
-///
-/// `id` must contain BCS encoded `(service_addr, post_id)`.
-/// Checks: service match, post exists, caller has active subscription >= required_tier.
 entry fun seal_approve(
     id: vector<u8>,
     service: &Service,
@@ -666,7 +592,6 @@ entry fun seal_approve(
 
     let caller = ctx.sender();
 
-    // Creator always has access to their own content (max tier)
     if (caller == service.creator) {
         return
     };
@@ -680,11 +605,6 @@ entry fun seal_approve(
     assert!(types::subscription_tier(sub) >= required_tier, ENoAccess);
 }
 
-// ============================================================
-// View functions
-// ============================================================
-
-/// Check if a user has an active subscription to a service.
 public fun has_active_subscription(
     service: &Service,
     subscriber: address,
@@ -698,7 +618,6 @@ public fun has_active_subscription(
     types::subscription_expires_at_ms(sub) > clock.timestamp_ms()
 }
 
-/// Get the subscription tier and expiry for a user.
 public fun get_subscription_info(
     service: &Service,
     subscriber: address,
@@ -708,17 +627,14 @@ public fun get_subscription_info(
     (types::subscription_tier(sub), types::subscription_expires_at_ms(sub))
 }
 
-/// Get the number of posts a creator has published.
 public fun get_post_count(service: &Service): u64 {
     service.posts.length()
 }
 
-/// Get the number of tiers a creator offers.
 public fun get_tier_count(service: &Service): u64 {
     service.tiers.length()
 }
 
-/// Get creator revenue balance.
 public fun get_creator_revenue(service: &Service): u64 {
     balance::value(&service.revenue)
 }
@@ -729,29 +645,21 @@ public fun get_creator_avatar(service: &Service): String { service.avatar_blob_i
 public fun get_service_creator(service: &Service): address { service.creator }
 public fun get_suins_name(service: &Service): Option<String> { service.suins_name }
 
-/// Get likes count for a post.
 public fun get_post_likes(service: &Service, post_id: u64): u64 {
     let idx = find_post_index(service, post_id);
     types::post_likes(&service.posts[idx])
 }
 
-/// Get dislikes count for a post.
 public fun get_post_dislikes(service: &Service, post_id: u64): u64 {
     let idx = find_post_index(service, post_id);
     types::post_dislikes(&service.posts[idx])
 }
 
-/// Get comment count for a post.
 public fun get_post_comment_count(service: &Service, post_id: u64): u64 {
     let idx = find_post_index(service, post_id);
     types::post_comment_count(&service.posts[idx])
 }
 
-// ============================================================
-// Package-internal helpers (for subscription module)
-// ============================================================
-
-/// Find tier info by level. Returns (found, price, duration_ms).
 public(package) fun find_tier_info(service: &Service, tier_level: u64): (bool, u64, u64) {
     let len = service.tiers.length();
     let mut i = 0;
@@ -764,28 +672,23 @@ public(package) fun find_tier_info(service: &Service, tier_level: u64): (bool, u
     (false, 0, 0)
 }
 
-/// Add revenue balance to the service.
 public(package) fun add_revenue(service: &mut Service, rev: Balance<SUI>) {
     balance::join(&mut service.revenue, rev);
 }
 
-/// Get the creator's address.
 public(package) fun get_creator(service: &Service): address {
     service.creator
 }
 
-/// Check if an address has a subscription entry.
 public(package) fun has_subscriber(service: &Service, addr: address): bool {
     service.subscribers.contains(addr)
 }
 
-/// Get subscriber details. Returns (tier, expires_at_ms).
 public(package) fun get_subscriber_details(service: &Service, addr: address): (u64, u64) {
     let sub = &service.subscribers[addr];
     (types::subscription_tier(sub), types::subscription_expires_at_ms(sub))
 }
 
-/// Add or update a subscriber's subscription.
 public(package) fun set_subscriber(
     service: &mut Service,
     addr: address,
@@ -800,11 +703,6 @@ public(package) fun set_subscriber(
     };
 }
 
-// ============================================================
-// Internal helpers
-// ============================================================
-
-/// Find a post's index in the posts vector by post_id. Aborts if not found.
 fun find_post_index(service: &Service, post_id: u64): u64 {
     let len = service.posts.length();
     let mut i = 0;
@@ -817,20 +715,14 @@ fun find_post_index(service: &Service, post_id: u64): u64 {
     abort EPostNotFound
 }
 
-/// Assert that a caller can interact (react/comment) with a post.
-/// Creator always allowed. Free posts (tier 0) open to everyone.
-/// Otherwise, caller must have an active subscription >= required_tier.
 fun assert_interaction_access(
     service: &Service,
     caller: address,
     required_tier: u64,
     clock: &Clock,
 ) {
-    // Free post — anyone can interact
     if (required_tier == 0) { return };
-    // Creator always has access
     if (caller == service.creator) { return };
-    // Must have active subscription with sufficient tier
     assert!(service.subscribers.contains(caller), ENoAccess);
     let sub = &service.subscribers[caller];
     let now = clock.timestamp_ms();
