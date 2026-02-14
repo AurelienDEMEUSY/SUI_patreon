@@ -47,7 +47,7 @@ export function Sidebar({ className = '', isCreator = false, onBecomeCreator }: 
               <PanelLeftClose size={20} />
             </button>
             <div className="flex items-center gap-2">
-              <h1 className='font-bold text-xl'>Patreon</h1>
+              <h1 className='font-bold text-xl'>DePatreon</h1>
               <div className="size-8 bg-[#3c3cf6] rounded-lg flex items-center justify-center shrink-0">
                 <Star className="text-white" size={20} fill="currentColor" />
               </div>

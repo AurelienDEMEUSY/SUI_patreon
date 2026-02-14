@@ -24,7 +24,7 @@ export function PageContainer({
 }: PageContainerProps) {
   const baseClasses = noPadding
     ? 'pb-8'
-    : 'px-4 sm:px-6 lg:px-8 pb-8';
+    : 'px-1 pb-8';
 
   return (
     <div className={`${maxWidth} mx-auto w-full ${baseClasses} ${className}`}>
