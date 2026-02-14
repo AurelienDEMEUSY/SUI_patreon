@@ -3,30 +3,39 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCurrentAccount } from '@mysten/dapp-kit';
-import { PageContainer } from '@/components/layout';
 import { useCreator } from '@/hooks/useCreator';
 import { useAutoRegister } from '@/hooks/useAutoRegister';
 import { useCreatorPosts } from '@/hooks/useCreatorPosts';
+import { CreatorHeader } from '@/components/creator/CreatorHeader';
+import { ProfileTabs } from '@/components/creator/ProfileTabs';
 import { CreateProfileForm } from '@/components/creator/CreateProfileForm';
 import { CreatePostForm } from '@/components/post/CreatePostForm';
-import { PostFeed } from '@/components/post/PostFeed';
+import { AddTierForm } from '@/components/tier/AddTierForm';
+import { CreatorProfileSkeleton } from '@/components/creator/CreatorProfileSkeleton';
+import { NoCreatorProfile } from '@/components/creator/NoCreatorProfile';
+import { CreatorAboutTab } from '@/components/creator/CreatorAboutTab';
+import { CreatorHubSidebar } from '@/components/creator/CreatorHubSidebar';
+import { CreatorPostsTab } from '@/components/creator/CreatorPostsTab';
+import { CreatorMembershipTab } from '@/components/creator/CreatorMembershipTab';
+import { CreatorRegisteringBanner } from '@/components/creator/CreatorRegisteringBanner';
 
 export default function CreatorHubPage() {
     const router = useRouter();
     const currentAccount = useCurrentAccount();
-    const { creator, serviceObjectId } = useCreator(currentAccount?.address || null);
+    const { creator, serviceObjectId, isLoading } = useCreator(currentAccount?.address || null);
     const {
-        needsRegistration,
         isChecking,
         isRegistering,
         error: registerError,
         register,
     } = useAutoRegister();
     const { posts, isLoading: postsLoading, refetch: refetchPosts } = useCreatorPosts(serviceObjectId);
+    const [activeTab, setActiveTab] = useState('posts');
+    const [showAddTier, setShowAddTier] = useState(false);
     const [showCreatePost, setShowCreatePost] = useState(false);
     const [showCreateForm, setShowCreateForm] = useState(false);
 
-    const hasProfile = !!serviceObjectId;
+    const hasProfile = !!serviceObjectId && !!creator;
 
     const handleRegister = async (name: string, description: string) => {
         const result = await register(name, description);
@@ -37,77 +46,72 @@ export default function CreatorHubPage() {
         return result;
     };
 
-    // Loading state
-    if (isChecking) {
-        return (
-            <PageContainer maxWidth="max-w-4xl">
-                <div className="flex flex-col items-center justify-center min-h-[50vh]">
-                    <span className="material-symbols-outlined text-4xl text-[#3c3cf6] animate-spin mb-4">progress_activity</span>
-                    <p className="text-white/50 text-sm font-medium">Checking your creator profile…</p>
-                </div>
-            </PageContainer>
-        );
+    if (isChecking || isLoading) {
+        return <CreatorProfileSkeleton />;
     }
 
-    // Has a profile → show creator hub with posts
-    if (hasProfile) {
+    if (hasProfile && creator) {
         return (
-            <PageContainer maxWidth="max-w-4xl">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
-                            <span className="w-10 h-10 bg-gradient-to-br from-[#3c3cf6] to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-[#3c3cf6]/20">
-                                <span className="material-symbols-outlined text-xl text-white">auto_awesome</span>
-                            </span>
-                            Creator Hub
-                        </h1>
-                        <p className="text-gray-500 text-sm mt-1 ml-[52px]">Manage your posts and content</p>
-                    </div>
-                    <button
-                        onClick={() => setShowCreatePost(true)}
-                        className="h-11 px-6 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] text-white font-bold rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(60,60,246,0.4)] hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.6)] active:scale-95 flex items-center gap-2 text-sm"
-                    >
-                        <span className="material-symbols-outlined text-lg">edit_note</span>
-                        New Post
-                    </button>
-                </div>
+            <div className="w-full pb-20">
+                {isRegistering && <CreatorRegisteringBanner />}
 
-                {/* Stats bar */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="stat-card px-5 py-4 text-center">
-                        <div className="text-2xl font-black text-white">{posts.length}</div>
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold mt-1">Posts</div>
-                    </div>
-                    <div className="stat-card px-5 py-4 text-center">
-                        <div className="text-2xl font-black text-white">{creator?.tiers.length || 0}</div>
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold mt-1">Tiers</div>
-                    </div>
-                    <div className="stat-card px-5 py-4 text-center">
-                        <div className="text-2xl font-black text-white">{creator?.totalSubscribers || 0}</div>
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold mt-1">Subscribers</div>
-                    </div>
-                </div>
-
-                {/* Create post quick action */}
-                <button
-                    onClick={() => setShowCreatePost(true)}
-                    className="w-full mb-6 py-4 rounded-2xl border-2 border-dashed border-white/[0.08] hover:border-[#3c3cf6]/40 bg-white/[0.02] hover:bg-[#3c3cf6]/5 transition-all flex items-center justify-center gap-2 text-sm font-bold text-gray-400 hover:text-[#3c3cf6] group"
-                >
-                    <span className="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">edit_note</span>
-                    Create a new post
-                </button>
-
-                {/* Posts feed */}
-                <PostFeed
-                    posts={posts}
+                <CreatorHeader
+                    creator={creator}
                     serviceObjectId={serviceObjectId}
                     isOwnProfile={true}
-                    isLoading={postsLoading}
+                    onAddTier={() => setShowAddTier(true)}
+                    onCreatePost={() => setShowCreatePost(true)}
                 />
 
-                {/* Create Post Modal */}
-                {showCreatePost && creator && (
+                <div className="w-full max-w-6xl mx-auto px-6 lg:px-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-10 mt-8">
+                        <div className="min-w-0">
+                            <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+                            <div className="min-h-[400px] mt-2">
+                                {activeTab === 'posts' && (
+                                    <CreatorPostsTab
+                                        posts={posts}
+                                        serviceObjectId={serviceObjectId || ''}
+                                        isLoading={postsLoading}
+                                        onCreatePost={() => setShowCreatePost(true)}
+                                    />
+                                )}
+
+                                {activeTab === 'about' && <CreatorAboutTab creator={creator} />}
+
+                                {activeTab === 'membership' && (
+                                    <CreatorMembershipTab
+                                        tiers={creator.tiers}
+                                        serviceObjectId={serviceObjectId}
+                                        onAddTier={() => setShowAddTier(true)}
+                                    />
+                                )}
+                            </div>
+                        </div>
+
+                        <CreatorHubSidebar
+                            creator={creator}
+                            serviceObjectId={serviceObjectId}
+                            onAboutClick={() => setActiveTab('about')}
+                        />
+                    </div>
+                </div>
+
+                {showAddTier && serviceObjectId && (
+                    <AddTierForm
+                        serviceObjectId={serviceObjectId}
+                        existingTierLevels={creator.tiers.map((t) => t.tierLevel)}
+                        onSuccess={() => {
+                            setShowAddTier(false);
+                            router.refresh();
+                            window.location.reload();
+                        }}
+                        onClose={() => setShowAddTier(false)}
+                    />
+                )}
+
+                {showCreatePost && serviceObjectId && (
                     <CreatePostForm
                         serviceObjectId={serviceObjectId}
                         tiers={creator.tiers}
@@ -118,30 +122,17 @@ export default function CreatorHubPage() {
                         onClose={() => setShowCreatePost(false)}
                     />
                 )}
-            </PageContainer>
+            </div>
         );
     }
 
-    // No profile → empty state with registration
     return (
-        <PageContainer maxWidth="max-w-4xl">
-            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-                <div className="w-16 h-16 bg-white/[0.04] rounded-2xl flex items-center justify-center mb-6 border border-white/[0.06]">
-                    <span className="material-symbols-outlined text-3xl text-gray-500">person_off</span>
-                </div>
-                <h1 className="text-2xl font-black text-white mb-2">No Creator Profile</h1>
-                <p className="text-gray-400 max-w-md mb-8 leading-relaxed">
-                    You don&apos;t have a creator profile yet. Create one to start publishing content, setting up subscription tiers, and earning from your community.
-                </p>
-                <button
-                    onClick={() => setShowCreateForm(true)}
-                    className="px-8 py-4 bg-gradient-to-r from-[#3c3cf6] to-[#6366f1] text-white font-bold rounded-xl hover:shadow-[0_0_40px_-5px_rgba(60,60,246,0.6)] transition-all active:scale-95 flex items-center gap-2"
-                >
-                    <span className="material-symbols-outlined text-lg">add_circle</span>
-                    Create My Profile
-                </button>
-            </div>
-
+        <NoCreatorProfile
+            title="Pas de profil créateur"
+            description="Crée un profil pour publier du contenu et gérer tes abonnés."
+            buttonLabel="Créer mon profil"
+            onButtonClick={() => setShowCreateForm(true)}
+        >
             {showCreateForm && (
                 <CreateProfileForm
                     onSubmit={handleRegister}
@@ -150,6 +141,6 @@ export default function CreatorHubPage() {
                     onClose={() => setShowCreateForm(false)}
                 />
             )}
-        </PageContainer>
+        </NoCreatorProfile>
     );
 }
