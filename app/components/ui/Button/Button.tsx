@@ -17,13 +17,13 @@ export function Button({
 }: ButtonProps) {
   const baseClasses = 'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
 
-  const variantClasses = {
+  const variantClasses: Record<'primary' | 'secondary' | 'ghost', string> = {
     primary: 'bg-[#3c3cf6] text-white hover:bg-[#2828d0] hover:shadow-lg hover:shadow-primary/50 active:scale-95',
     secondary: 'glass-panel text-white hover:bg-white/10 active:scale-95',
     ghost: 'text-white hover:bg-white/10 active:scale-95',
   };
 
-  const sizeClasses = {
+  const sizeClasses: Record<'sm' | 'md' | 'lg', string> = {
     sm: 'px-4 py-2 text-sm',
     md: 'px-6 py-3 text-base',
     lg: 'px-8 py-4 text-lg',
@@ -31,8 +31,8 @@ export function Button({
 
   const classes = cn(
     baseClasses,
-    variantClasses[variant],
-    sizeClasses[size],
+    variantClasses[variant as 'primary' | 'secondary' | 'ghost'],
+    sizeClasses[size as 'sm' | 'md' | 'lg'],
     (loading || disabled) && 'opacity-50 cursor-not-allowed',
     className
   );
