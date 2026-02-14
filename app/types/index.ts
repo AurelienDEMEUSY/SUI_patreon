@@ -164,7 +164,10 @@ export type BlurAmount = 'sm' | 'md' | 'lg';
 export type BadgeVariant = 'default' | 'primary' | 'success';
 export type BadgeSize = 'sm' | 'md';
 
-// Post types (text + images, Walrus + SEAL)
+// ============================================================
+// Post types (text + images, encrypted via Walrus + SEAL)
+// ============================================================
+
 export type {
     PostImage,
     PostMetadata,

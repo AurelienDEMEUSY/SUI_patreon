@@ -5,8 +5,11 @@ import {
 } from "./contract-constants";
 
 // ============================================================
-// Walrus Storage — Upload & Download encrypted blobs
+// Walrus Storage — Upload & Download blobs
 // ============================================================
+// Walrus is a decentralized blob storage layer on SUI.
+// Blobs are addressed by a content-derived blobId.
+// SEAL-encrypted data is uploaded *as-is* (opaque bytes).
 
 export interface WalrusUploadResponse {
     /** The blob ID assigned by Walrus */

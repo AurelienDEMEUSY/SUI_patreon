@@ -70,6 +70,7 @@ export function usePostContent(
         if (post.requiredTier === 0 && !isUnlocked && !isLoading) {
             loadPublicContent();
         }
+        // Only re-run when the specific post or service changes (not on every render)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [post?.postId, serviceObjectId]);
 

@@ -1,3 +1,4 @@
+// Post components — barrel exports
 export { CreatePostForm } from './CreatePostForm';
 export { PostCard } from './PostCard';
 export { PostFeed } from './PostFeed';

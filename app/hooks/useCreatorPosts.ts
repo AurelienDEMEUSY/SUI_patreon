@@ -34,7 +34,7 @@ export function useCreatorPosts(serviceObjectId: string | null): UseCreatorPosts
     const [refetchCount, setRefetchCount] = useState(0);
     const suiClient = useSuiClient();
 
-    const refetch = useCallback(() => {
+    const refetch = useCallback((): void => {
         setRefetchCount((c) => c + 1);
     }, []);
 

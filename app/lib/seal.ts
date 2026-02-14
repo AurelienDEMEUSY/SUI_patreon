@@ -9,9 +9,10 @@ import {
 } from "./contract-constants";
 
 // ============================================================
-// Types
+// Internal Types
 // ============================================================
 
+/** SUI client abstraction (avoids coupling to a specific import) */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySuiClient = any;
 
@@ -24,6 +25,7 @@ function hexToBytes(hex: string): number[] {
     return bytes;
 }
 
+/** Convert a byte array to its lowercase hex representation */
 function toHex(bytes: Uint8Array): string {
     return Array.from(bytes)
         .map((b) => b.toString(16).padStart(2, "0"))
