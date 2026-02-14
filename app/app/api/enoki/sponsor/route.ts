@@ -2,6 +2,11 @@ import type { EnokiNetwork } from "@mysten/enoki";
 import { NextResponse } from "next/server";
 import { getEnokiServerClient } from "@/enoki/sponsor/createEnokiClient";
 
+/**
+ * When using JWT (zkLogin), allowedMoveCallTargets and allowedAddresses
+ * must be configured in the Enoki Portal, not passed in the API call.
+ * See docs/ENOKI_PORTAL_SETUP.md for the allowlist.
+ */
 export async function POST(request: Request) {
   let body: { transactionKindBytes: string; network?: string; jwt: string };
   try {

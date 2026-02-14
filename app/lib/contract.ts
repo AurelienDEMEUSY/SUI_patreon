@@ -177,6 +177,10 @@ export function buildDeletePost(
 /**
  * Subscribe to a creator by paying the tier price in SUI.
  * Payment is split: creator (95%) + platform fee (5%).
+ *
+ * Sponsored tx note: uses tx.gas as the payment source. When building with
+ * onlyTransactionKind, the SDK resolves tx.gas to the sender's primary coin.
+ * The user must have SUI for the tier payment; gas (network fee) is sponsored.
  */
 export function buildSubscribe(
     serviceObjectId: string,
@@ -185,7 +189,7 @@ export function buildSubscribe(
 ): Transaction {
     const tx = new Transaction();
 
-    // Split exact payment from gas coin
+    // Split exact payment from sender's primary coin (tx.gas)
     const [paymentCoin] = tx.splitCoins(tx.gas, [
         tx.pure.u64(paymentAmountMist),
     ]);

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useSignAndExecuteTransaction, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit';
+import { useSuiClient, useCurrentAccount } from '@mysten/dapp-kit';
 import { buildSubscribe } from '@/lib/contract';
+import { useSponsoredTransaction } from '@/enoki/sponsor';
 
 interface UseSubscribeResult {
     /** Subscribe to a tier */
@@ -17,14 +18,15 @@ interface UseSubscribeResult {
 
 /**
  * Hook to subscribe to a creator's tier.
- * Builds and executes the subscription transaction, paying in SUI.
+ * Uses sponsored transactions (Enoki) — zero gas for the user.
+ * User pays the tier price in SUI; gas is sponsored.
  */
 export function useSubscribe(): UseSubscribeResult {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isSuccess, setIsSuccess] = useState(false);
     const currentAccount = useCurrentAccount();
-    const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+    const { sponsorAndExecute } = useSponsoredTransaction();
     const suiClient = useSuiClient();
 
     const subscribe = useCallback(async (
@@ -44,9 +46,7 @@ export function useSubscribe(): UseSubscribeResult {
         try {
             const tx = buildSubscribe(serviceObjectId, tierLevel, priceInMist);
 
-            const result = await signAndExecute({
-                transaction: tx,
-            });
+            const result = await sponsorAndExecute(tx);
 
             // Wait for confirmation
             await suiClient.waitForTransaction({
@@ -62,7 +62,7 @@ export function useSubscribe(): UseSubscribeResult {
         } finally {
             setIsLoading(false);
         }
-    }, [currentAccount, signAndExecute, suiClient]);
+    }, [currentAccount, sponsorAndExecute, suiClient]);
 
     return { subscribe, isLoading, error, isSuccess };
 }
