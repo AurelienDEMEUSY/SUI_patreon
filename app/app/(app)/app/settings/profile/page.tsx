@@ -76,7 +76,6 @@ export default function EditProfilePage() {
                         creator={creator}
                         serviceObjectId={serviceObjectId}
                         onSuccess={() => {
-                            // Refresh to see updated data
                             router.refresh();
                         }}
                     />

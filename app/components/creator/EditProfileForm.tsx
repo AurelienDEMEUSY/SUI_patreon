@@ -4,20 +4,12 @@ import { useState, useRef, useCallback } from 'react';
 import { useUpdateProfile } from '@/hooks/useUpdateProfile';
 import type { Creator } from '@/types';
 
-// ============================================================
-// EditProfileForm — avatar upload + name/bio editing
-// ============================================================
-
 interface EditProfileFormProps {
     creator: Creator;
     serviceObjectId: string;
     onSuccess?: () => void;
 }
 
-/**
- * Extract the raw Walrus blob ID from a full aggregator URL.
- * If the value is already a bare blob ID (no slash), return as-is.
- */
 function extractBlobId(urlOrId: string | null): string {
     if (!urlOrId) return '';
     const parts = urlOrId.split('/');
@@ -38,7 +30,6 @@ export function EditProfileForm({ creator, serviceObjectId, onSuccess }: EditPro
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate file type & size
         if (!file.type.startsWith('image/')) {
             alert('Please select an image file');
             return;

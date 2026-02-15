@@ -22,7 +22,6 @@ export default function SettingsPage() {
         const success = await deleteCreator(serviceObjectId);
         if (success) {
             setShowDeleteModal(false);
-            // Redirect to home — useAutoRegister will detect the missing Service
             router.push('/app');
             router.refresh();
         }

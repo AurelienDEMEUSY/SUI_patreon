@@ -7,20 +7,11 @@ import {
 
 const ENOKI_API_BASE = "https://api.enoki.mystenlabs.com/v1";
 
-/**
- * Sponsor a transaction using the "sender" variant of the Enoki HTTP API.
- *
- * We call the HTTP API directly (instead of EnokiClient SDK) to get the
- * full error response body from Enoki when something goes wrong.
- *
- * @see https://docs.enoki.mystenlabs.com/http-api/openapi
- */
 export async function POST(request: Request) {
   let body: {
     transactionKindBytes: string;
     network?: string;
     sender: string;
-    /** Extra object/address IDs to include in allowedAddresses (e.g. coin objects). */
     extraAllowedAddresses?: string[];
   };
   try {
